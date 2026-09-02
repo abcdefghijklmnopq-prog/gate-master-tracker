@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { dbmsChapters } from "@/data/dbms/chapters";
 import TopicCard from "@/components/subjects/TopicCard";
 
@@ -22,7 +23,10 @@ export default function DBMSPage() {
       <div className="mx-auto max-w-7xl px-6 py-8">
         {dbmsChapters.map((chapter) => (
           <section key={chapter.id}>
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <Link
+              href="/subjects/dbms/chapter-1"
+              className="block rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-slate-300 hover:shadow-md"
+            >
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-500">
@@ -48,7 +52,7 @@ export default function DBMSPage() {
                   </p>
                 </div>
               </div>
-            </div>
+            </Link>
 
             <div className="mt-6 grid gap-5 md:grid-cols-2">
               {chapter.topics.map((topic) => (
