@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const stats = [
   {
     label: "Study Streak",
@@ -146,9 +148,7 @@ export default function Home() {
               GATE Countdown
             </p>
 
-            <h3 className="mt-3 text-3xl font-bold">
-              Preparation Mode
-            </h3>
+            <h3 className="mt-3 text-3xl font-bold">Preparation Mode</h3>
 
             <p className="mt-3 text-sm leading-6 text-slate-400">
               Your countdown and exam schedule will be connected here.
@@ -191,35 +191,66 @@ export default function Home() {
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
-            {subjects.map((subject) => (
-              <div
-                key={subject.shortName}
-                className="rounded-xl border border-slate-200 p-4"
-              >
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="font-semibold text-slate-900">
-                      {subject.shortName}
-                    </p>
+            {subjects.map((subject) =>
+              subject.shortName === "DBMS" ? (
+                <Link
+                  key={subject.shortName}
+                  href="/subjects/dbms"
+                  className="block rounded-xl border border-slate-200 p-4 transition hover:border-slate-300 hover:shadow-sm"
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="font-semibold text-slate-900">
+                        {subject.shortName}
+                      </p>
 
-                    <p className="mt-1 text-sm text-slate-500">
-                      {subject.name}
-                    </p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {subject.name}
+                      </p>
+                    </div>
+
+                    <span className="text-sm font-semibold text-slate-600">
+                      {subject.progress}%
+                    </span>
                   </div>
 
-                  <span className="text-sm font-semibold text-slate-600">
-                    {subject.progress}%
-                  </span>
-                </div>
+                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
+                    <div
+                      className="h-full rounded-full bg-slate-900"
+                      style={{ width: `${subject.progress}%` }}
+                    />
+                  </div>
+                </Link>
+              ) : (
+                <div
+                  key={subject.shortName}
+                  className="rounded-xl border border-slate-200 p-4"
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="font-semibold text-slate-900">
+                        {subject.shortName}
+                      </p>
 
-                <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
-                  <div
-                    className="h-full rounded-full bg-slate-900"
-                    style={{ width: `${subject.progress}%` }}
-                  />
+                      <p className="mt-1 text-sm text-slate-500">
+                        {subject.name}
+                      </p>
+                    </div>
+
+                    <span className="text-sm font-semibold text-slate-600">
+                      {subject.progress}%
+                    </span>
+                  </div>
+
+                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
+                    <div
+                      className="h-full rounded-full bg-slate-900"
+                      style={{ width: `${subject.progress}%` }}
+                    />
+                  </div>
                 </div>
-              </div>
-            ))}
+              ),
+            )}
           </div>
         </section>
 
@@ -235,9 +266,7 @@ export default function Home() {
             </p>
 
             <div className="mt-6 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
-              <p className="font-medium text-slate-700">
-                No tasks yet
-              </p>
+              <p className="font-medium text-slate-700">No tasks yet</p>
 
               <p className="mt-1 text-sm text-slate-500">
                 Your daily tasks will appear here.
@@ -255,9 +284,7 @@ export default function Home() {
             </p>
 
             <div className="mt-6 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
-              <p className="font-medium text-slate-700">
-                No activity yet
-              </p>
+              <p className="font-medium text-slate-700">No activity yet</p>
 
               <p className="mt-1 text-sm text-slate-500">
                 Completed topics and solved questions will appear here.
