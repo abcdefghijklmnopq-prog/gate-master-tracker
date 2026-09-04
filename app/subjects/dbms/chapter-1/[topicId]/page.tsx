@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { chapterOneTopics } from "@/data/dbms/topics";
+import { supabase } from "@/lib/supabase";
+import type { Topic } from "@/types/topic";
 
 interface TopicPageProps {
   params: Promise<{
@@ -14,16 +15,43 @@ export default async function DBMSTopicPage({
   const { topicId } = await params;
 
   const topicNumber = topicId.replace("topic-", "");
+  const topicIdFromRoute = `dbms-1-${topicNumber}`;
 
-  const topic = chapterOneTopics.find(
-    (item) => item.id === `dbms-1-${topicNumber}`,
-  );
+  const { data: topic, error } = await supabase
+    .from("topics")
+    .select(
+      "id, title, description, definition, real_life_example, notes, revision_points, youtube_videos",
+    )
+    .eq("id", topicIdFromRoute)
+    .single();
 
-  if (!topic) {
+  if (error || !topic) {
     notFound();
   }
 
-  const progress = topic.progress;
+  const topicData: Topic = {
+    id: topic.id,
+    title: topic.title,
+    description: topic.description ?? "",
+    definition: topic.definition ?? "",
+    realLifeExample: topic.real_life_example ?? "",
+    notes: topic.notes ?? "",
+    revisionPoints: Array.isArray(topic.revision_points)
+      ? topic.revision_points
+      : [],
+    completed: false,
+    youtubeVideos: Array.isArray(topic.youtube_videos)
+      ? topic.youtube_videos
+      : [],
+    progress: {
+      notesCompleted: false,
+      videosCompleted: false,
+      revisionCompleted: false,
+      pyqsCompleted: false,
+    },
+  };
+
+  const progress = topicData.progress;
 
   const progressItems = [
     {
@@ -58,15 +86,15 @@ export default async function DBMSTopicPage({
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto max-w-5xl px-6 py-8">
           <p className="text-sm font-medium text-slate-500">
-            DBMS / Chapter 1 / {topic.title}
+            DBMS / Chapter 1 / {topicData.title}
           </p>
 
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
-            {topic.title}
+            {topicData.title}
           </h1>
 
           <p className="mt-3 max-w-3xl text-slate-600">
-            {topic.description}
+            {topicData.description}
           </p>
         </div>
       </header>
@@ -89,6 +117,7 @@ export default async function DBMSTopicPage({
               <p className="text-2xl font-bold text-slate-900">
                 {progressPercentage}%
               </p>
+
               <p className="text-xs font-medium text-slate-500">
                 Progress
               </p>
@@ -128,7 +157,7 @@ export default async function DBMSTopicPage({
           </h2>
 
           <div className="mt-5 whitespace-pre-line text-[15px] leading-7 text-slate-700">
-            {topic.notes}
+            {topicData.notes}
           </div>
         </section>
 
@@ -139,7 +168,7 @@ export default async function DBMSTopicPage({
           </h2>
 
           <p className="mt-4 leading-7 text-slate-700">
-            {topic.definition}
+            {topicData.definition}
           </p>
         </section>
 
@@ -150,7 +179,7 @@ export default async function DBMSTopicPage({
           </h2>
 
           <p className="mt-4 leading-7 text-slate-700">
-            {topic.realLifeExample}
+            {topicData.realLifeExample}
           </p>
         </section>
 
@@ -165,7 +194,7 @@ export default async function DBMSTopicPage({
           </p>
 
           <div className="mt-5 space-y-3">
-            {topic.youtubeVideos?.map((video) => (
+            {topicData.youtubeVideos?.map((video) => (
               <a
                 key={video.id}
                 href={video.url}
@@ -201,7 +230,7 @@ export default async function DBMSTopicPage({
           </h2>
 
           <ul className="mt-5 space-y-3">
-            {topic.revisionPoints.map((point) => (
+            {topicData.revisionPoints.map((point) => (
               <li
                 key={point}
                 className="flex gap-3 leading-7 text-slate-700"
