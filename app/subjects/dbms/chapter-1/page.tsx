@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import TopicCard from "@/components/subjects/TopicCard";
+import ChapterProgress from "@/components/subjects/ChapterProgress";
 import type { Topic } from "@/types/topic";
 
 export default async function DBMSChapterOnePage() {
@@ -18,7 +19,8 @@ export default async function DBMSChapterOnePage() {
           </h1>
 
           <p className="mt-2 text-sm text-red-700">
-            {chapterError?.message ?? "The requested DBMS chapter could not be found."}
+            {chapterError?.message ??
+              "The requested DBMS chapter could not be found."}
           </p>
         </div>
       </main>
@@ -71,16 +73,7 @@ export default async function DBMSChapterOnePage() {
     },
   }));
 
-  const completedTopics = chapterTopics.filter(
-    (topic) => topic.completed,
-  ).length;
-
-  const totalTopics = chapterTopics.length;
-
-  const progressPercentage =
-    totalTopics > 0
-      ? Math.round((completedTopics / totalTopics) * 100)
-      : 0;
+  const topicIds = chapterTopics.map((topic) => topic.id);
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -101,27 +94,7 @@ export default async function DBMSChapterOnePage() {
       </header>
 
       <div className="mx-auto max-w-7xl px-6 py-8">
-        <div className="mb-6 flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div>
-            <p className="text-sm font-medium text-slate-500">
-              Chapter Progress
-            </p>
-
-            <p className="mt-1 text-lg font-semibold text-slate-900">
-              {completedTopics} of {totalTopics} topics completed
-            </p>
-          </div>
-
-          <div className="rounded-xl bg-slate-100 px-4 py-3 text-center">
-            <p className="text-2xl font-bold text-slate-900">
-              {progressPercentage}%
-            </p>
-
-            <p className="mt-1 text-xs font-medium text-slate-500">
-              Progress
-            </p>
-          </div>
-        </div>
+        <ChapterProgress topicIds={topicIds} />
 
         <section>
           <h2 className="text-xl font-bold text-slate-900">

@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 import type { Topic } from "@/types/topic";
 
 interface TopicCardProps {
@@ -6,7 +10,52 @@ interface TopicCardProps {
 }
 
 export default function TopicCard({ topic }: TopicCardProps) {
+  const [completed, setCompleted] = useState(topic.completed);
+  const [loading, setLoading] = useState(true);
+
   const topicNumber = topic.id.split("-").pop();
+
+  useEffect(() => {
+    async function loadTopicProgress() {
+      setLoading(true);
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setCompleted(false);
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("topic_progress")
+        .select(
+          "notes_completed, videos_completed, revision_completed, pyqs_completed",
+        )
+        .eq("user_id", user.id)
+        .eq("topic_id", topic.id)
+        .maybeSingle();
+
+      if (error) {
+        setCompleted(false);
+        setLoading(false);
+        return;
+      }
+
+      const topicCompleted =
+        data?.notes_completed === true &&
+        data?.videos_completed === true &&
+        data?.revision_completed === true &&
+        data?.pyqs_completed === true;
+
+      setCompleted(topicCompleted);
+      setLoading(false);
+    }
+
+    loadTopicProgress();
+  }, [topic.id]);
 
   return (
     <Link
@@ -27,12 +76,18 @@ export default function TopicCard({ topic }: TopicCardProps) {
 
           <span
             className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium ${
-              topic.completed
-                ? "bg-emerald-100 text-emerald-700"
-                : "bg-slate-100 text-slate-600"
+              loading
+                ? "bg-slate-100 text-slate-500"
+                : completed
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "bg-slate-100 text-slate-600"
             }`}
           >
-            {topic.completed ? "Completed" : "Pending"}
+            {loading
+              ? "Loading..."
+              : completed
+                ? "Completed"
+                : "Pending"}
           </span>
         </div>
 
