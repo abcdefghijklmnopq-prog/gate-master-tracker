@@ -1,26 +1,86 @@
-import { dbmsChapters } from "@/data/dbms/chapters";
+import { supabase } from "@/lib/supabase";
 import TopicCard from "@/components/subjects/TopicCard";
+import type { Topic } from "@/types/topic";
 
-export default function DBMSChapterOnePage() {
-  const chapter = dbmsChapters.find(
-    (item) => item.id === "dbms-chapter-1",
-  );
+export default async function DBMSChapterOnePage() {
+  const { data: chapter, error: chapterError } = await supabase
+    .from("chapters")
+    .select("id, title, description")
+    .eq("id", "dbms-chapter-1")
+    .single();
 
-  if (!chapter) {
+  if (chapterError || !chapter) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-50 px-6">
-        <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-          <h1 className="text-xl font-bold text-slate-900">
-            Chapter not found
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center">
+          <h1 className="text-xl font-bold text-red-800">
+            Chapter could not be loaded
           </h1>
 
-          <p className="mt-2 text-sm text-slate-500">
-            The requested DBMS chapter could not be found.
+          <p className="mt-2 text-sm text-red-700">
+            {chapterError?.message ?? "The requested DBMS chapter could not be found."}
           </p>
         </div>
       </main>
     );
   }
+
+  const { data: topics, error: topicsError } = await supabase
+    .from("topics")
+    .select(
+      "id, title, description, definition, real_life_example, notes, revision_points, youtube_videos",
+    )
+    .eq("chapter_id", chapter.id)
+    .order("id");
+
+  if (topicsError) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 px-6">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center">
+          <h1 className="text-xl font-bold text-red-800">
+            Topics could not be loaded
+          </h1>
+
+          <p className="mt-2 text-sm text-red-700">
+            {topicsError.message}
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  const chapterTopics: Topic[] = (topics ?? []).map((topic) => ({
+    id: topic.id,
+    title: topic.title,
+    description: topic.description ?? "",
+    definition: topic.definition ?? "",
+    realLifeExample: topic.real_life_example ?? "",
+    notes: topic.notes ?? "",
+    revisionPoints: Array.isArray(topic.revision_points)
+      ? topic.revision_points
+      : [],
+    completed: false,
+    youtubeVideos: Array.isArray(topic.youtube_videos)
+      ? topic.youtube_videos
+      : [],
+    progress: {
+      notesCompleted: false,
+      videosCompleted: false,
+      revisionCompleted: false,
+      pyqsCompleted: false,
+    },
+  }));
+
+  const completedTopics = chapterTopics.filter(
+    (topic) => topic.completed,
+  ).length;
+
+  const totalTopics = chapterTopics.length;
+
+  const progressPercentage =
+    totalTopics > 0
+      ? Math.round((completedTopics / totalTopics) * 100)
+      : 0;
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -48,19 +108,13 @@ export default function DBMSChapterOnePage() {
             </p>
 
             <p className="mt-1 text-lg font-semibold text-slate-900">
-              {chapter.completedTopics} of {chapter.totalTopics} topics
-              completed
+              {completedTopics} of {totalTopics} topics completed
             </p>
           </div>
 
           <div className="rounded-xl bg-slate-100 px-4 py-3 text-center">
             <p className="text-2xl font-bold text-slate-900">
-              {chapter.totalTopics > 0
-                ? Math.round(
-                    (chapter.completedTopics / chapter.totalTopics) * 100,
-                  )
-                : 0}
-              %
+              {progressPercentage}%
             </p>
 
             <p className="mt-1 text-xs font-medium text-slate-500">
@@ -79,7 +133,7 @@ export default function DBMSChapterOnePage() {
           </p>
 
           <div className="mt-6 grid gap-5 md:grid-cols-2">
-            {chapter.topics.map((topic) => (
+            {chapterTopics.map((topic) => (
               <TopicCard key={topic.id} topic={topic} />
             ))}
           </div>
