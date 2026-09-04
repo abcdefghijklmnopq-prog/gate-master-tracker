@@ -210,12 +210,16 @@ export default async function Home() {
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             {subjects.map((subject) =>
               subject.shortName === "DBMS" ? (
-                <div key={subject.shortName}>
+                <Link
+                  key={subject.shortName}
+                  href="/subjects/dbms"
+                  className="block rounded-xl transition hover:-translate-y-0.5 hover:shadow-md"
+                >
                   <DashboardProgress
                     topicIds={dbmsTopicIds}
                     mode="dbms-progress"
                   />
-                </div>
+                </Link>
               ) : (
                 <div
                   key={subject.shortName}
