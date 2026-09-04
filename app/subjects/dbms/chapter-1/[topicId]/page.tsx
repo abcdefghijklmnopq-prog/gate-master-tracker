@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import TopicProgress from "@/components/subjects/TopicProgress";
 import type { Topic } from "@/types/topic";
 
 interface TopicPageProps {
@@ -43,43 +44,7 @@ export default async function DBMSTopicPage({
     youtubeVideos: Array.isArray(topic.youtube_videos)
       ? topic.youtube_videos
       : [],
-    progress: {
-      notesCompleted: false,
-      videosCompleted: false,
-      revisionCompleted: false,
-      pyqsCompleted: false,
-    },
   };
-
-  const progress = topicData.progress;
-
-  const progressItems = [
-    {
-      label: "Notes",
-      completed: progress?.notesCompleted ?? false,
-    },
-    {
-      label: "Videos",
-      completed: progress?.videosCompleted ?? false,
-    },
-    {
-      label: "Revision",
-      completed: progress?.revisionCompleted ?? false,
-    },
-    {
-      label: "PYQs",
-      completed: progress?.pyqsCompleted ?? false,
-    },
-  ];
-
-  const completedItems = progressItems.filter(
-    (item) => item.completed,
-  ).length;
-
-  const progressPercentage =
-    progressItems.length > 0
-      ? Math.round((completedItems / progressItems.length) * 100)
-      : 0;
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -101,54 +66,7 @@ export default async function DBMSTopicPage({
 
       <div className="mx-auto max-w-5xl px-6 py-8">
         {/* Topic Progress */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">
-                Topic Progress
-              </p>
-
-              <h2 className="mt-1 text-xl font-bold text-slate-900">
-                {completedItems} of {progressItems.length} study tasks completed
-              </h2>
-            </div>
-
-            <div className="rounded-xl bg-slate-100 px-5 py-3 text-center">
-              <p className="text-2xl font-bold text-slate-900">
-                {progressPercentage}%
-              </p>
-
-              <p className="text-xs font-medium text-slate-500">
-                Progress
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {progressItems.map((item) => (
-              <div
-                key={item.label}
-                className="rounded-xl border border-slate-200 px-4 py-3"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-sm font-medium text-slate-700">
-                    {item.label}
-                  </span>
-
-                  <span
-                    className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                      item.completed
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-slate-100 text-slate-500"
-                    }`}
-                  >
-                    {item.completed ? "Done" : "Pending"}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+        <TopicProgress topicId={topicData.id} />
 
         {/* Notes */}
         <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
