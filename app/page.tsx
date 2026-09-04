@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
+import DashboardProgress from "@/components/dashboard/DashboardProgress";
 
 const stats = [
   {
@@ -12,11 +14,6 @@ const stats = [
     description: "This week",
   },
   {
-    label: "Topics Completed",
-    value: "0",
-    description: "Across all subjects",
-  },
-  {
     label: "PYQs Solved",
     value: "0",
     description: "Previous year questions",
@@ -27,7 +24,6 @@ const subjects = [
   {
     name: "Database Management System",
     shortName: "DBMS",
-    progress: 0,
   },
   {
     name: "Operating Systems",
@@ -46,7 +42,15 @@ const subjects = [
   },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const { data: dbmsTopics } = await supabase
+    .from("topics")
+    .select("id")
+    .eq("chapter_id", "dbms-chapter-1")
+    .order("id");
+
+  const dbmsTopicIds = (dbmsTopics ?? []).map((topic) => topic.id);
+
   return (
     <main className="min-h-screen bg-slate-50">
       {/* Header */}
@@ -56,6 +60,7 @@ export default function Home() {
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
               GATE Master Tracker
             </h1>
+
             <p className="mt-1 text-sm text-slate-500">
               Your complete GATE CSE preparation dashboard
             </p>
@@ -71,7 +76,9 @@ export default function Home() {
       <div className="mx-auto max-w-7xl px-6 py-8">
         {/* Welcome */}
         <section className="mb-8">
-          <p className="text-sm font-medium text-slate-500">Dashboard</p>
+          <p className="text-sm font-medium text-slate-500">
+            Dashboard
+          </p>
 
           <h2 className="mt-1 text-3xl font-bold tracking-tight text-slate-900">
             Welcome back 👋
@@ -85,6 +92,11 @@ export default function Home() {
 
         {/* Stats */}
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <DashboardProgress
+            topicIds={dbmsTopicIds}
+            mode="topics-completed"
+          />
+
           {stats.map((stat) => (
             <div
               key={stat.label}
@@ -148,7 +160,9 @@ export default function Home() {
               GATE Countdown
             </p>
 
-            <h3 className="mt-3 text-3xl font-bold">Preparation Mode</h3>
+            <h3 className="mt-3 text-3xl font-bold">
+              Preparation Mode
+            </h3>
 
             <p className="mt-3 text-sm leading-6 text-slate-400">
               Your countdown and exam schedule will be connected here.
@@ -165,7 +179,10 @@ export default function Home() {
                   className="rounded-xl bg-white/10 p-3 text-center"
                 >
                   <p className="text-xl font-bold">{value}</p>
-                  <p className="mt-1 text-xs text-slate-400">{label}</p>
+
+                  <p className="mt-1 text-xs text-slate-400">
+                    {label}
+                  </p>
                 </div>
               ))}
             </div>
@@ -193,34 +210,12 @@ export default function Home() {
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             {subjects.map((subject) =>
               subject.shortName === "DBMS" ? (
-                <Link
-                  key={subject.shortName}
-                  href="/subjects/dbms"
-                  className="block rounded-xl border border-slate-200 p-4 transition hover:border-slate-300 hover:shadow-sm"
-                >
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="font-semibold text-slate-900">
-                        {subject.shortName}
-                      </p>
-
-                      <p className="mt-1 text-sm text-slate-500">
-                        {subject.name}
-                      </p>
-                    </div>
-
-                    <span className="text-sm font-semibold text-slate-600">
-                      {subject.progress}%
-                    </span>
-                  </div>
-
-                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className="h-full rounded-full bg-slate-900"
-                      style={{ width: `${subject.progress}%` }}
-                    />
-                  </div>
-                </Link>
+                <div key={subject.shortName}>
+                  <DashboardProgress
+                    topicIds={dbmsTopicIds}
+                    mode="dbms-progress"
+                  />
+                </div>
               ) : (
                 <div
                   key={subject.shortName}
@@ -245,7 +240,9 @@ export default function Home() {
                   <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
                     <div
                       className="h-full rounded-full bg-slate-900"
-                      style={{ width: `${subject.progress}%` }}
+                      style={{
+                        width: `${subject.progress}%`,
+                      }}
                     />
                   </div>
                 </div>
@@ -266,7 +263,9 @@ export default function Home() {
             </p>
 
             <div className="mt-6 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
-              <p className="font-medium text-slate-700">No tasks yet</p>
+              <p className="font-medium text-slate-700">
+                No tasks yet
+              </p>
 
               <p className="mt-1 text-sm text-slate-500">
                 Your daily tasks will appear here.
@@ -284,7 +283,9 @@ export default function Home() {
             </p>
 
             <div className="mt-6 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
-              <p className="font-medium text-slate-700">No activity yet</p>
+              <p className="font-medium text-slate-700">
+                No activity yet
+              </p>
 
               <p className="mt-1 text-sm text-slate-500">
                 Completed topics and solved questions will appear here.
