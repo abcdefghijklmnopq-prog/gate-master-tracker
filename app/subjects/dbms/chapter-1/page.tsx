@@ -107,7 +107,11 @@ export default async function DBMSChapterOnePage() {
 
           <div className="mt-6 grid gap-5 md:grid-cols-2">
             {chapterTopics.map((topic) => (
-              <TopicCard key={topic.id} topic={topic} />
+              <TopicCard
+                key={topic.id}
+                topic={topic}
+                chapterNumber={1}
+              />
             ))}
           </div>
         </section>

@@ -7,9 +7,13 @@ import type { Topic } from "@/types/topic";
 
 interface TopicCardProps {
   topic: Topic;
+  chapterNumber: number;
 }
 
-export default function TopicCard({ topic }: TopicCardProps) {
+export default function TopicCard({
+  topic,
+  chapterNumber,
+}: TopicCardProps) {
   const [completed, setCompleted] = useState(topic.completed);
   const [loading, setLoading] = useState(true);
 
@@ -59,7 +63,7 @@ export default function TopicCard({ topic }: TopicCardProps) {
 
   return (
     <Link
-      href={`/subjects/dbms/chapter-1/topic-${topicNumber}`}
+      href={`/subjects/dbms/chapter-${chapterNumber}/topic-${topicNumber}`}
       className="block"
     >
       <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
