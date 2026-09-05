@@ -1,3 +1,5 @@
+import StudyTimer from "@/components/planner/StudyTimer";
+
 export default function PlannerPage() {
   return (
     <main className="min-h-screen bg-slate-50 px-6 py-10">
@@ -21,22 +23,35 @@ export default function PlannerPage() {
               <p className="text-sm font-medium text-slate-500">
                 Today&apos;s Tasks
               </p>
-              <p className="mt-2 text-2xl font-bold text-slate-900">0</p>
+
+              <p className="mt-2 text-2xl font-bold text-slate-900">
+                0
+              </p>
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
               <p className="text-sm font-medium text-slate-500">
                 Weekly Target
               </p>
-              <p className="mt-2 text-2xl font-bold text-slate-900">0 hrs</p>
+
+              <p className="mt-2 text-2xl font-bold text-slate-900">
+                0 hrs
+              </p>
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
               <p className="text-sm font-medium text-slate-500">
                 Study Streak
               </p>
-              <p className="mt-2 text-2xl font-bold text-slate-900">0 days</p>
+
+              <p className="mt-2 text-2xl font-bold text-slate-900">
+                0 days
+              </p>
             </div>
+          </div>
+
+          <div className="mt-8">
+            <StudyTimer />
           </div>
         </div>
       </div>
