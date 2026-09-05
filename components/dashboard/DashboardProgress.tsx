@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 
 interface DashboardProgressProps {
   topicIds: string[];
-  mode: "topics-completed" | "dbms-progress";
+  mode: "topics-completed" | "dbms-progress" | "overall-progress";
 }
 
 interface ProgressRow {
@@ -64,12 +64,12 @@ export default function DashboardProgress({
       if (mode === "topics-completed") {
         setValue(completedTopics);
       } else {
-        const dbmsProgress =
+        const progressPercentage =
           topicIds.length > 0
             ? Math.round((completedTopics / topicIds.length) * 100)
             : 0;
 
-        setValue(dbmsProgress);
+        setValue(progressPercentage);
       }
 
       setLoading(false);
@@ -93,6 +93,14 @@ export default function DashboardProgress({
           Across all subjects
         </p>
       </div>
+    );
+  }
+
+  if (mode === "overall-progress") {
+    return (
+      <span className="text-sm font-medium text-slate-500">
+        {loading ? "— Overall" : `${value}% Overall`}
+      </span>
     );
   }
 

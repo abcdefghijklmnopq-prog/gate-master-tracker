@@ -217,9 +217,10 @@ export default async function Home() {
               </p>
             </div>
 
-            <span className="text-sm font-medium text-slate-500">
-              0% Overall
-            </span>
+            <DashboardProgress
+              topicIds={dbmsTopicIds}
+              mode="overall-progress"
+            />
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
