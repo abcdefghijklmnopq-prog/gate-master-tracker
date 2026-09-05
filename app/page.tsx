@@ -1,17 +1,14 @@
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import DashboardProgress from "@/components/dashboard/DashboardProgress";
+import StudyHours from "@/components/dashboard/StudyHours";
+import WeeklyStudyProgress from "@/components/dashboard/WeeklyStudyProgress";
 
 const stats = [
   {
     label: "Study Streak",
     value: "0 Days",
     description: "Start your streak today",
-  },
-  {
-    label: "Study Hours",
-    value: "0h",
-    description: "This week",
   },
   {
     label: "PYQs Solved",
@@ -112,6 +109,8 @@ export default async function Home() {
             mode="topics-completed"
           />
 
+          <StudyHours />
+
           {stats.map((stat) => (
             <div
               key={stat.label}
@@ -152,21 +151,7 @@ export default async function Home() {
               </span>
             </div>
 
-            <div className="mt-8 grid grid-cols-7 gap-3">
-              {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(
-                (day) => (
-                  <div key={day} className="text-center">
-                    <div className="flex h-40 items-end justify-center">
-                      <div className="h-2 w-full max-w-8 rounded-t-md bg-slate-200" />
-                    </div>
-
-                    <p className="mt-3 text-xs font-medium text-slate-500">
-                      {day}
-                    </p>
-                  </div>
-                ),
-              )}
-            </div>
+            <WeeklyStudyProgress />
           </div>
 
           {/* GATE Countdown */}
