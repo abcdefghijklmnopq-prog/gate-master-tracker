@@ -43,13 +43,28 @@ const subjects = [
 ];
 
 export default async function Home() {
-  const { data: dbmsTopics } = await supabase
-    .from("topics")
+  const { data: dbmsChapters } = await supabase
+    .from("chapters")
     .select("id")
-    .eq("chapter_id", "dbms-chapter-1")
+    .eq("subject_id", "dbms")
     .order("id");
 
-  const dbmsTopicIds = (dbmsTopics ?? []).map((topic) => topic.id);
+  const dbmsChapterIds = (dbmsChapters ?? []).map(
+    (chapter) => chapter.id,
+  );
+
+  const { data: dbmsTopics } =
+    dbmsChapterIds.length > 0
+      ? await supabase
+          .from("topics")
+          .select("id")
+          .in("chapter_id", dbmsChapterIds)
+          .order("id")
+      : { data: [] };
+
+  const dbmsTopicIds = (dbmsTopics ?? []).map(
+    (topic) => topic.id,
+  );
 
   return (
     <main className="min-h-screen bg-slate-50">
