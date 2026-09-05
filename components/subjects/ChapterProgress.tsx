@@ -82,21 +82,25 @@ export default function ChapterProgress({
       : 0;
 
   return (
-    <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex items-center justify-between">
+    <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-medium text-slate-500">
             Chapter Progress
           </p>
 
-          <p className="mt-1 text-lg font-semibold text-slate-900">
+          <p className="mt-1 text-xl font-bold text-slate-900">
             {loading
               ? "Loading progress..."
               : `${completedTopics} of ${totalTopics} topics completed`}
           </p>
+
+          <p className="mt-2 text-sm text-slate-500">
+            A topic is completed when all four study tasks are finished.
+          </p>
         </div>
 
-        <div className="rounded-xl bg-slate-100 px-4 py-3 text-center">
+        <div className="rounded-xl bg-slate-100 px-5 py-3 text-center">
           <p className="text-2xl font-bold text-slate-900">
             {loading ? "—" : `${progressPercentage}%`}
           </p>
@@ -104,6 +108,27 @@ export default function ChapterProgress({
           <p className="mt-1 text-xs font-medium text-slate-500">
             Progress
           </p>
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <div className="flex items-center justify-between text-xs font-medium text-slate-500">
+          <span>Topic completion</span>
+
+          <span>
+            {loading
+              ? "—"
+              : `${completedTopics}/${totalTopics}`}
+          </span>
+        </div>
+
+        <div className="mt-2 h-3 overflow-hidden rounded-full bg-slate-100">
+          <div
+            className="h-full rounded-full bg-slate-900 transition-all duration-300"
+            style={{
+              width: `${loading ? 0 : progressPercentage}%`,
+            }}
+          />
         </div>
       </div>
 
