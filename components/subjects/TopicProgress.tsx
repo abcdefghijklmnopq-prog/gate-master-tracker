@@ -72,6 +72,8 @@ export default function TopicProgress({
           revisionCompleted: data.revision_completed,
           pyqsCompleted: data.pyqs_completed,
         });
+      } else {
+        setProgress(defaultProgress);
       }
 
       setLoading(false);
@@ -224,6 +226,20 @@ export default function TopicProgress({
         </div>
       </div>
 
+      <div className="mt-6">
+        <div className="flex items-center justify-between text-xs font-medium text-slate-500">
+          <span>Overall completion</span>
+          <span>{progressPercentage}%</span>
+        </div>
+
+        <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+          <div
+            className="h-full rounded-full bg-slate-900 transition-all duration-300"
+            style={{ width: `${progressPercentage}%` }}
+          />
+        </div>
+      </div>
+
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {progressItems.map((item) => (
           <button
@@ -231,7 +247,11 @@ export default function TopicProgress({
             type="button"
             onClick={() => toggleProgress(item.field)}
             disabled={saving}
-            className="rounded-xl border border-slate-200 px-4 py-3 text-left transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className={`rounded-xl border px-4 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${
+              item.completed
+                ? "border-emerald-200 bg-emerald-50"
+                : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+            }`}
           >
             <div className="flex items-center justify-between gap-3">
               <span className="text-sm font-medium text-slate-700">
@@ -248,6 +268,18 @@ export default function TopicProgress({
                 {item.completed ? "Done" : "Pending"}
               </span>
             </div>
+
+            <p
+              className={`mt-2 text-xs ${
+                item.completed
+                  ? "text-emerald-700"
+                  : "text-slate-500"
+              }`}
+            >
+              {item.completed
+                ? "Completed"
+                : "Mark as complete"}
+            </p>
           </button>
         ))}
       </div>
