@@ -2,14 +2,10 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import DashboardProgress from "@/components/dashboard/DashboardProgress";
 import StudyHours from "@/components/dashboard/StudyHours";
+import StudyStreak from "@/components/dashboard/StudyStreak";
 import WeeklyStudyProgress from "@/components/dashboard/WeeklyStudyProgress";
 
 const stats = [
-  {
-    label: "Study Streak",
-    value: "0 Days",
-    description: "Start your streak today",
-  },
   {
     label: "PYQs Solved",
     value: "0",
@@ -110,6 +106,8 @@ export default async function Home() {
           />
 
           <StudyHours />
+
+          <StudyStreak />
 
           {stats.map((stat) => (
             <div
