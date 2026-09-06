@@ -1,6 +1,7 @@
 import StudyPlan from "@/components/planner/StudyPlan";
 import StudySessionHistory from "@/components/planner/StudySessionHistory";
 import StudyTimer from "@/components/planner/StudyTimer";
+import WeeklyTargetSummary from "@/components/planner/WeeklyTargetSummary";
 
 export default function PlannerPage() {
   return (
@@ -31,15 +32,7 @@ export default function PlannerPage() {
               </p>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
-              <p className="text-sm font-medium text-slate-500">
-                Weekly Target
-              </p>
-
-              <p className="mt-2 text-2xl font-bold text-slate-900">
-                0 hrs
-              </p>
-            </div>
+            <WeeklyTargetSummary />
 
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
               <p className="text-sm font-medium text-slate-500">
