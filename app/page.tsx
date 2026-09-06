@@ -74,8 +74,17 @@ export default async function Home() {
             </p>
           </div>
 
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-600">
-            GATE CSE
+          <div className="flex items-center gap-3">
+            <Link
+              href="/planner"
+              className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100"
+            >
+              Study Planner
+            </Link>
+
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-600">
+              GATE CSE
+            </div>
           </div>
         </div>
       </header>
