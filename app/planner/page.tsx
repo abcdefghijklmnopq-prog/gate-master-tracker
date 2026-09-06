@@ -1,6 +1,7 @@
 import StudyPlan from "@/components/planner/StudyPlan";
 import StudySessionHistory from "@/components/planner/StudySessionHistory";
 import StudyStreakSummary from "@/components/planner/StudyStreakSummary";
+import StudyTasks from "@/components/planner/StudyTasks";
 import StudyTimer from "@/components/planner/StudyTimer";
 import WeeklyTargetSummary from "@/components/planner/WeeklyTargetSummary";
 
@@ -36,6 +37,10 @@ export default function PlannerPage() {
             <WeeklyTargetSummary />
 
             <StudyStreakSummary />
+          </div>
+
+          <div className="mt-8">
+            <StudyTasks />
           </div>
 
           <div className="mt-8">
