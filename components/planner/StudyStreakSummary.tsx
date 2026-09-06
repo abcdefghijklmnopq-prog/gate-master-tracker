@@ -28,7 +28,22 @@ function calculateStreak(sessions: StudySession[]) {
   }
 
   const today = new Date();
-  let currentDate = new Date(today);
+  const todayKey = getDateKey(today);
+
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayKey = getDateKey(yesterday);
+
+  let currentDate: Date;
+
+  if (studyDates.has(todayKey)) {
+    currentDate = new Date(today);
+  } else if (studyDates.has(yesterdayKey)) {
+    currentDate = new Date(yesterday);
+  } else {
+    return 0;
+  }
+
   let streak = 0;
 
   while (studyDates.has(getDateKey(currentDate))) {
@@ -79,6 +94,8 @@ export default function StudyStreakSummary() {
     loadStudyStreak();
   }, []);
 
+  const streakLabel = streak === 1 ? "day" : "days";
+
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
       <p className="text-sm font-medium text-slate-500">
@@ -86,7 +103,7 @@ export default function StudyStreakSummary() {
       </p>
 
       <p className="mt-2 text-2xl font-bold text-slate-900">
-        {loading ? "—" : `${streak} days`}
+        {loading ? "—" : `${streak} ${streakLabel}`}
       </p>
     </div>
   );
