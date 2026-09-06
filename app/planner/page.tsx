@@ -1,3 +1,4 @@
+import StudySessionHistory from "@/components/planner/StudySessionHistory";
 import StudyTimer from "@/components/planner/StudyTimer";
 
 export default function PlannerPage() {
@@ -52,6 +53,10 @@ export default function PlannerPage() {
 
           <div className="mt-8">
             <StudyTimer />
+          </div>
+
+          <div className="mt-8">
+            <StudySessionHistory />
           </div>
         </div>
       </div>
