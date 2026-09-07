@@ -3,22 +3,29 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
-function getTodayDate() {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, "0");
-  const day = String(today.getDate()).padStart(2, "0");
+interface TodayTasksSummaryProps {
+  selectedDate: Date;
+}
+
+function getDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
 }
 
-export default function TodayTasksSummary() {
+export default function TodayTasksSummary({
+  selectedDate,
+}: TodayTasksSummaryProps) {
   const [totalTasks, setTotalTasks] = useState(0);
   const [completedTasks, setCompletedTasks] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  const selectedDateKey = getDateKey(selectedDate);
+
   useEffect(() => {
-    async function loadTodayTaskSummary() {
+    async function loadSelectedDateTaskSummary() {
       setLoading(true);
 
       const {
@@ -36,7 +43,7 @@ export default function TodayTasksSummary() {
         .from("study_tasks")
         .select("completed")
         .eq("user_id", user.id)
-        .eq("scheduled_date", getTodayDate());
+        .eq("scheduled_date", selectedDateKey);
 
       if (error) {
         setTotalTasks(0);
@@ -54,13 +61,22 @@ export default function TodayTasksSummary() {
       setLoading(false);
     }
 
-    loadTodayTaskSummary();
-  }, []);
+    loadSelectedDateTaskSummary();
+  }, [selectedDateKey]);
+
+  const formattedSelectedDate = selectedDate.toLocaleDateString(
+    "en-IN",
+    {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    },
+  );
 
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
       <p className="text-sm font-medium text-slate-500">
-        Today&apos;s Tasks
+        Tasks for Selected Date
       </p>
 
       <p className="mt-2 text-2xl font-bold text-slate-900">
@@ -68,7 +84,7 @@ export default function TodayTasksSummary() {
       </p>
 
       <p className="mt-1 text-xs font-medium text-slate-500">
-        Completed
+        {formattedSelectedDate}
       </p>
     </div>
   );

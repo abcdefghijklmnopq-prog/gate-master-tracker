@@ -43,7 +43,7 @@ export default function PlannerPage() {
           </div>
 
           <div className="mt-8 grid gap-4 md:grid-cols-3">
-            <TodayTasksSummary />
+            <TodayTasksSummary selectedDate={selectedDate} />
 
             <WeeklyTargetSummary />
 
@@ -58,7 +58,7 @@ export default function PlannerPage() {
           </div>
 
           <div className="mt-8">
-            <StudyTasks />
+            <StudyTasks selectedDate={selectedDate} />
           </div>
 
           <div className="mt-8">
