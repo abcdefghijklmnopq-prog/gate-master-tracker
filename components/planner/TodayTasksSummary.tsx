@@ -13,11 +13,12 @@ function getTodayDate() {
 }
 
 export default function TodayTasksSummary() {
-  const [taskCount, setTaskCount] = useState(0);
+  const [totalTasks, setTotalTasks] = useState(0);
+  const [completedTasks, setCompletedTasks] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function loadTodayTaskCount() {
+    async function loadTodayTaskSummary() {
       setLoading(true);
 
       const {
@@ -25,28 +26,35 @@ export default function TodayTasksSummary() {
       } = await supabase.auth.getUser();
 
       if (!user) {
-        setTaskCount(0);
+        setTotalTasks(0);
+        setCompletedTasks(0);
         setLoading(false);
         return;
       }
 
-      const { count, error } = await supabase
+      const { data, error } = await supabase
         .from("study_tasks")
-        .select("id", { count: "exact", head: true })
+        .select("completed")
         .eq("user_id", user.id)
         .eq("scheduled_date", getTodayDate());
 
       if (error) {
-        setTaskCount(0);
+        setTotalTasks(0);
+        setCompletedTasks(0);
         setLoading(false);
         return;
       }
 
-      setTaskCount(count ?? 0);
+      const tasks = data ?? [];
+
+      setTotalTasks(tasks.length);
+      setCompletedTasks(
+        tasks.filter((task) => task.completed === true).length,
+      );
       setLoading(false);
     }
 
-    loadTodayTaskCount();
+    loadTodayTaskSummary();
   }, []);
 
   return (
@@ -56,7 +64,11 @@ export default function TodayTasksSummary() {
       </p>
 
       <p className="mt-2 text-2xl font-bold text-slate-900">
-        {loading ? "—" : taskCount}
+        {loading ? "—" : `${completedTasks} / ${totalTasks}`}
+      </p>
+
+      <p className="mt-1 text-xs font-medium text-slate-500">
+        Completed
       </p>
     </div>
   );
