@@ -4,6 +4,7 @@ import StudySessionHistory from "@/components/planner/StudySessionHistory";
 import StudyStreakSummary from "@/components/planner/StudyStreakSummary";
 import StudyTasks from "@/components/planner/StudyTasks";
 import StudyTimer from "@/components/planner/StudyTimer";
+import TodayTasksSummary from "@/components/planner/TodayTasksSummary";
 import WeeklyTargetSummary from "@/components/planner/WeeklyTargetSummary";
 
 export default function PlannerPage() {
@@ -36,15 +37,7 @@ export default function PlannerPage() {
           </div>
 
           <div className="mt-8 grid gap-4 md:grid-cols-3">
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
-              <p className="text-sm font-medium text-slate-500">
-                Today&apos;s Tasks
-              </p>
-
-              <p className="mt-2 text-2xl font-bold text-slate-900">
-                0
-              </p>
-            </div>
+            <TodayTasksSummary />
 
             <WeeklyTargetSummary />
 
