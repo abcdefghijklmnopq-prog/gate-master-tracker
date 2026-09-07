@@ -1,4 +1,5 @@
 import Link from "next/link";
+import PlannerCalendar from "@/components/planner/PlannerCalendar";
 import StudyPlan from "@/components/planner/StudyPlan";
 import StudySessionHistory from "@/components/planner/StudySessionHistory";
 import StudyStreakSummary from "@/components/planner/StudyStreakSummary";
@@ -42,6 +43,10 @@ export default function PlannerPage() {
             <WeeklyTargetSummary />
 
             <StudyStreakSummary />
+          </div>
+
+          <div className="mt-8">
+            <PlannerCalendar />
           </div>
 
           <div className="mt-8">
