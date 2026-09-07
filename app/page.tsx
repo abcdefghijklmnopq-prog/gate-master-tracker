@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import DashboardProgress from "@/components/dashboard/DashboardProgress";
 import StudyHours from "@/components/dashboard/StudyHours";
 import StudyStreak from "@/components/dashboard/StudyStreak";
+import TodayTasks from "@/components/dashboard/TodayTasks";
 import WeeklyStudyProgress from "@/components/dashboard/WeeklyStudyProgress";
 
 const stats = [
@@ -274,15 +275,7 @@ export default async function Home() {
               Your daily preparation checklist
             </p>
 
-            <div className="mt-6 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
-              <p className="font-medium text-slate-700">
-                No tasks yet
-              </p>
-
-              <p className="mt-1 text-sm text-slate-500">
-                Your daily tasks will appear here.
-              </p>
-            </div>
+            <TodayTasks />
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
