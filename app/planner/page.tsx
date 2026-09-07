@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import PlannerCalendar from "@/components/planner/PlannerCalendar";
 import StudyPlan from "@/components/planner/StudyPlan";
@@ -9,6 +12,8 @@ import TodayTasksSummary from "@/components/planner/TodayTasksSummary";
 import WeeklyTargetSummary from "@/components/planner/WeeklyTargetSummary";
 
 export default function PlannerPage() {
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
   return (
     <main className="min-h-screen bg-slate-50 px-6 py-10">
       <div className="mx-auto max-w-7xl">
@@ -46,7 +51,10 @@ export default function PlannerPage() {
           </div>
 
           <div className="mt-8">
-            <PlannerCalendar />
+            <PlannerCalendar
+              selectedDate={selectedDate}
+              onDateSelect={setSelectedDate}
+            />
           </div>
 
           <div className="mt-8">

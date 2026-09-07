@@ -4,6 +4,11 @@ import { useMemo, useState } from "react";
 
 const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+interface PlannerCalendarProps {
+  selectedDate: Date;
+  onDateSelect: (date: Date) => void;
+}
+
 function getMonthLabel(date: Date) {
   return date.toLocaleDateString("en-IN", {
     month: "long",
@@ -42,12 +47,15 @@ function isSameDate(firstDate: Date, secondDate: Date) {
   );
 }
 
-export default function PlannerCalendar() {
+export default function PlannerCalendar({
+  selectedDate,
+  onDateSelect,
+}: PlannerCalendarProps) {
   const today = useMemo(() => new Date(), []);
+
   const [currentMonth, setCurrentMonth] = useState(
     new Date(today.getFullYear(), today.getMonth(), 1),
   );
-  const [selectedDate, setSelectedDate] = useState(today);
 
   const calendarDays = useMemo(
     () => getCalendarDays(currentMonth),
@@ -77,7 +85,7 @@ export default function PlannerCalendar() {
   }
 
   function selectDate(date: Date) {
-    setSelectedDate(date);
+    onDateSelect(date);
   }
 
   return (
