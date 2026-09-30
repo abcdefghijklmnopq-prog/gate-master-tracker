@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import AccountSettingsPanel from "@/components/layout/AccountSettingsPanel";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import DashboardProgress from "@/components/dashboard/DashboardProgress";
@@ -73,36 +72,25 @@ export default async function Home() {
 
         <main className="min-h-[calc(100vh-5rem)]">
           <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
+            {/* Page Header */}
             <section className="mb-8">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-500">
-                    Dashboard
-                  </p>
+              <div>
+                <p className="text-sm font-medium text-slate-500">
+                  Dashboard
+                </p>
 
-                  <h2 className="mt-1 text-3xl font-bold tracking-tight text-slate-900">
-                    Welcome back 👋
-                  </h2>
+                <h2 className="mt-1 text-3xl font-bold tracking-tight text-slate-900">
+                  Welcome back 👋
+                </h2>
 
-                  <p className="mt-2 max-w-2xl text-slate-600">
-                    Track your preparation, complete topics, solve PYQs, and
-                    stay consistent with your GATE preparation.
-                  </p>
-                </div>
-
-                <div className="hidden items-center gap-3 sm:flex">
-                  <Link
-                    href="/pyqs"
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
-                  >
-                    Practice PYQs
-                  </Link>
-
-                  <AccountSettingsPanel />
-                </div>
+                <p className="mt-2 max-w-2xl text-slate-600">
+                  Track your preparation, complete topics, solve PYQs, and
+                  stay consistent with your GATE preparation.
+                </p>
               </div>
             </section>
 
+            {/* Statistics */}
             <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <DashboardProgress
                 topicIds={dbmsTopicIds}
@@ -133,6 +121,7 @@ export default async function Home() {
               ))}
             </section>
 
+            {/* Weekly Progress + Countdown */}
             <section className="mt-8 grid gap-6 lg:grid-cols-3">
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md lg:col-span-2">
                 <div className="flex items-center justify-between">
@@ -157,6 +146,7 @@ export default async function Home() {
               <GateCountdown />
             </section>
 
+            {/* Subject Progress */}
             <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -222,6 +212,7 @@ export default async function Home() {
               </div>
             </section>
 
+            {/* Tasks + Recent Activity */}
             <section className="mt-8 grid gap-6 md:grid-cols-2">
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md">
                 <h3 className="text-lg font-semibold text-slate-900">
