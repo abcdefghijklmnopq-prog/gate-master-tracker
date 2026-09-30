@@ -1,62 +1,215 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
+import { supabase } from "@/lib/supabase";
 
-const mockTests = [
-  {
-    id: "dbms-core",
-    title: "DBMS Core Mock",
-    description:
-      "Test your understanding of DBMS fundamentals, SQL, normalization, indexing, and transactions.",
-    questions: 25,
-    marks: 35,
-    duration: "45 min",
-    difficulty: "Mixed",
-    subject: "DBMS",
-    status: "Available",
-  },
-  {
-    id: "dbms-sql",
-    title: "SQL & Relational Model",
-    description:
-      "Practice relational algebra, SQL queries, joins, nested queries, and relational concepts.",
-    questions: 20,
-    marks: 25,
-    duration: "35 min",
-    difficulty: "Medium",
-    subject: "DBMS",
-    status: "Available",
-  },
-  {
-    id: "dbms-transactions",
-    title: "Transactions & Concurrency",
-    description:
-      "Practice serializability, locking protocols, deadlocks, recovery, and transaction schedules.",
-    questions: 20,
-    marks: 25,
-    duration: "35 min",
-    difficulty: "Medium",
-    subject: "DBMS",
-    status: "Available",
-  },
-  {
-    id: "full-length-cse",
-    title: "GATE CSE Full Length",
-    description:
-      "A complete GATE-style CSE mock covering the major Computer Science subjects.",
-    questions: 65,
-    marks: 100,
-    duration: "180 min",
-    difficulty: "Full Length",
-    subject: "CSE",
-    status: "Coming Soon",
-  },
-];
+type MockTestRow = {
+  id: string;
+  title: string;
+  description: string | null;
+  subject_id: string | null;
+  duration_minutes: number;
+  total_marks: number;
+  difficulty: string | null;
+  status: string;
+};
+
+type MockTestQuestionRow = {
+  mock_test_id: string;
+};
+
+type SubjectRow = {
+  id: string;
+  name: string;
+};
+
+type AttemptRow = {
+  mock_test_id: string;
+  score: number;
+  status: string;
+};
+
+type MockTest = {
+  id: string;
+  title: string;
+  description: string;
+  questions: number;
+  marks: number;
+  duration: string;
+  difficulty: string;
+  subject: string;
+  status: "Available";
+};
 
 export default function MockTestsPage() {
-  const availableTests = mockTests.filter(
-    (test) => test.status === "Available",
+  const [mockTests, setMockTests] = useState<MockTest[]>([]);
+  const [attempts, setAttempts] = useState<AttemptRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(
+    null,
   );
+  const [userLoggedIn, setUserLoggedIn] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadMockTests() {
+      setLoading(true);
+      setErrorMessage(null);
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (cancelled) {
+        return;
+      }
+
+      setUserLoggedIn(Boolean(user));
+
+      const [
+        { data: mockTestData, error: mockTestError },
+        { data: questionData, error: questionError },
+        { data: subjectData, error: subjectError },
+      ] = await Promise.all([
+        supabase
+          .from("mock_tests")
+          .select(
+            "id, title, description, subject_id, duration_minutes, total_marks, difficulty, status",
+          )
+          .eq("status", "published")
+          .order("created_at", { ascending: true }),
+
+        supabase
+          .from("mock_test_questions")
+          .select("mock_test_id"),
+
+        supabase
+          .from("subjects")
+          .select("id, name"),
+      ]);
+
+      if (cancelled) {
+        return;
+      }
+
+      if (mockTestError) {
+        console.error(
+          "Failed to load mock tests:",
+          mockTestError,
+        );
+        setErrorMessage(
+          "Could not load mock tests. Please refresh and try again.",
+        );
+        setLoading(false);
+        return;
+      }
+
+      if (questionError) {
+        console.error(
+          "Failed to load mock test questions:",
+          questionError,
+        );
+      }
+
+      if (subjectError) {
+        console.error(
+          "Failed to load subjects:",
+          subjectError,
+        );
+      }
+
+      let attemptRows: AttemptRow[] = [];
+
+      if (user) {
+        const { data: attemptData, error: attemptError } =
+          await supabase
+            .from("mock_test_attempts")
+            .select("mock_test_id, score, status")
+            .eq("user_id", user.id)
+            .eq("status", "submitted");
+
+        if (cancelled) {
+          return;
+        }
+
+        if (attemptError) {
+          console.error(
+            "Failed to load mock test attempts:",
+            attemptError,
+          );
+        } else {
+          attemptRows = (attemptData ?? []) as AttemptRow[];
+        }
+      }
+
+      const tests = (mockTestData ?? []) as MockTestRow[];
+      const questions = (questionData ??
+        []) as MockTestQuestionRow[];
+      const subjects = (subjectData ?? []) as SubjectRow[];
+
+      const questionCountMap = new Map<string, number>();
+
+      questions.forEach((question) => {
+        questionCountMap.set(
+          question.mock_test_id,
+          (questionCountMap.get(question.mock_test_id) ?? 0) + 1,
+        );
+      });
+
+      const subjectMap = new Map(
+        subjects.map((subject) => [subject.id, subject.name]),
+      );
+
+      const formattedTests = tests.map((test) => ({
+        id: test.id,
+        title: test.title,
+        description:
+          test.description ??
+          "Practice GATE-style questions and track your performance.",
+        questions: questionCountMap.get(test.id) ?? 0,
+        marks: Number(test.total_marks),
+        duration: `${test.duration_minutes} min`,
+        difficulty: test.difficulty ?? "Mixed",
+        subject:
+          subjectMap.get(test.subject_id ?? "") ?? "CSE",
+        status: "Available" as const,
+      }));
+
+      setMockTests(formattedTests);
+      setAttempts(attemptRows);
+      setLoading(false);
+    }
+
+    loadMockTests();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const availableTests = useMemo(
+    () => mockTests.filter((test) => test.status === "Available"),
+    [mockTests],
+  );
+
+  const completedAttempts = useMemo(
+    () => attempts.filter((attempt) => attempt.status === "submitted"),
+    [attempts],
+  );
+
+  const bestScore = useMemo(() => {
+    if (completedAttempts.length === 0) {
+      return null;
+    }
+
+    return Math.max(
+      ...completedAttempts.map((attempt) => Number(attempt.score)),
+    );
+  }, [completedAttempts]);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -102,11 +255,11 @@ export default function MockTestsPage() {
                 </p>
 
                 <p className="mt-3 text-3xl font-bold tracking-tight text-slate-950">
-                  {availableTests.length}
+                  {loading ? "—" : availableTests.length}
                 </p>
 
                 <p className="mt-1 text-sm text-slate-500">
-                  Ready for your preparation
+                  Published tests ready to attempt
                 </p>
               </div>
 
@@ -116,7 +269,7 @@ export default function MockTestsPage() {
                 </p>
 
                 <p className="mt-3 text-3xl font-bold tracking-tight text-slate-950">
-                  0
+                  {loading ? "—" : completedAttempts.length}
                 </p>
 
                 <p className="mt-1 text-sm text-slate-500">
@@ -130,16 +283,20 @@ export default function MockTestsPage() {
                 </p>
 
                 <p className="mt-3 text-3xl font-bold tracking-tight text-slate-950">
-                  —
+                  {loading
+                    ? "—"
+                    : bestScore === null
+                      ? "—"
+                      : bestScore}
                 </p>
 
                 <p className="mt-1 text-sm text-slate-500">
-                  No attempts recorded yet
+                  Highest score from completed attempts
                 </p>
               </div>
             </section>
 
-            {/* Available Tests */}
+            {/* Test Library */}
             <section className="mt-8">
               <div className="mb-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
@@ -156,11 +313,39 @@ export default function MockTestsPage() {
                 </p>
               </div>
 
-              <div className="grid gap-5 lg:grid-cols-2">
-                {mockTests.map((test) => {
-                  const isAvailable = test.status === "Available";
+              {loading ? (
+                <div className="grid gap-5 lg:grid-cols-2">
+                  {[1, 2].map((item) => (
+                    <div
+                      key={item}
+                      className="h-80 animate-pulse rounded-2xl border border-slate-200 bg-white"
+                    />
+                  ))}
+                </div>
+              ) : errorMessage ? (
+                <div className="rounded-2xl border border-red-100 bg-red-50 px-6 py-10 text-center">
+                  <h3 className="text-sm font-bold text-red-900">
+                    Mock tests could not be loaded
+                  </h3>
 
-                  return (
+                  <p className="mt-2 text-sm text-red-700">
+                    {errorMessage}
+                  </p>
+                </div>
+              ) : availableTests.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
+                  <h3 className="text-sm font-bold text-slate-900">
+                    No published mock tests yet
+                  </h3>
+
+                  <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+                    Published mock tests will appear here when they
+                    are added to the test library.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid gap-5 lg:grid-cols-2">
+                  {availableTests.map((test) => (
                     <article
                       key={test.id}
                       className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
@@ -177,14 +362,8 @@ export default function MockTestsPage() {
                                 {test.title}
                               </h3>
 
-                              <span
-                                className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${
-                                  isAvailable
-                                    ? "bg-emerald-50 text-emerald-700"
-                                    : "bg-slate-100 text-slate-500"
-                                }`}
-                              >
-                                {test.status}
+                              <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
+                                Available
                               </span>
                             </div>
 
@@ -204,6 +383,7 @@ export default function MockTestsPage() {
                           <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                             Questions
                           </p>
+
                           <p className="mt-1 text-sm font-bold text-slate-900">
                             {test.questions}
                           </p>
@@ -213,6 +393,7 @@ export default function MockTestsPage() {
                           <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                             Marks
                           </p>
+
                           <p className="mt-1 text-sm font-bold text-slate-900">
                             {test.marks}
                           </p>
@@ -222,6 +403,7 @@ export default function MockTestsPage() {
                           <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                             Duration
                           </p>
+
                           <p className="mt-1 text-sm font-bold text-slate-900">
                             {test.duration}
                           </p>
@@ -231,6 +413,7 @@ export default function MockTestsPage() {
                           <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                             Level
                           </p>
+
                           <p className="mt-1 text-sm font-bold text-slate-900">
                             {test.difficulty}
                           </p>
@@ -239,32 +422,25 @@ export default function MockTestsPage() {
 
                       <div className="mt-5 flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
                         <p className="text-xs text-slate-400">
-                          {isAvailable
-                            ? "Test engine will open next."
-                            : "This test will be added later."}
+                          {test.questions} real questions in this
+                          test
                         </p>
 
                         <button
                           type="button"
-                          disabled={!isAvailable}
-                          className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
-                            isAvailable
-                              ? "bg-slate-950 text-white hover:bg-slate-800"
-                              : "cursor-not-allowed bg-slate-100 text-slate-400"
-                          }`}
+                          disabled
+                          className="cursor-not-allowed rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white opacity-70"
                         >
-                          {isAvailable
-                            ? "Start Test"
-                            : "Coming Soon"}
+                          Start Test
                         </button>
                       </div>
                     </article>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+              )}
             </section>
 
-            {/* Coming Soon Analytics */}
+            {/* Performance Analytics */}
             <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                 <div>
@@ -277,9 +453,9 @@ export default function MockTestsPage() {
                   </h2>
 
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                    Once you start attempting tests, this area will
-                    show scores, accuracy, time analysis, and weak
-                    topic insights.
+                    Scores, accuracy, time analysis, and weak-topic
+                    insights will appear here after you complete
+                    mock tests.
                   </p>
                 </div>
 
@@ -288,6 +464,7 @@ export default function MockTestsPage() {
                     <p className="text-lg font-bold text-slate-900">
                       —
                     </p>
+
                     <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                       Accuracy
                     </p>
@@ -297,6 +474,7 @@ export default function MockTestsPage() {
                     <p className="text-lg font-bold text-slate-900">
                       —
                     </p>
+
                     <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                       Avg. Score
                     </p>
@@ -304,14 +482,22 @@ export default function MockTestsPage() {
 
                   <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center">
                     <p className="text-lg font-bold text-slate-900">
-                      —
+                      {loading ? "—" : completedAttempts.length}
                     </p>
+
                     <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                       Attempts
                     </p>
                   </div>
                 </div>
               </div>
+
+              {!userLoggedIn && !loading && (
+                <div className="mt-5 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-center text-xs text-slate-500">
+                  Log in to track your mock test attempts and
+                  scores.
+                </div>
+              )}
             </section>
           </div>
         </main>
