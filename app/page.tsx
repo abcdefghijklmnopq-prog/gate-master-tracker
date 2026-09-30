@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import AccountSettingsPanel from "@/components/layout/AccountSettingsPanel";
+import Sidebar from "@/components/layout/Sidebar";
+import Header from "@/components/layout/Header";
 import DashboardProgress from "@/components/dashboard/DashboardProgress";
 import GateCountdown from "@/components/dashboard/GateCountdown";
 import StudyHours from "@/components/dashboard/StudyHours";
@@ -63,205 +65,199 @@ export default async function Home() {
   );
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              GATE Master Tracker
-            </h1>
+    <div className="min-h-screen bg-slate-50">
+      <Sidebar />
 
-            <p className="mt-1 text-sm text-slate-500">
-              Your complete GATE CSE preparation dashboard
-            </p>
-          </div>
+      <div className="lg:pl-64">
+        <Header />
 
-          <div className="flex items-center gap-3">
-            <Link
-              href="/planner"
-              className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100"
-            >
-              Study Planner
-            </Link>
+        <main className="min-h-[calc(100vh-5rem)]">
+          <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
+            <section className="mb-8">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-500">
+                    Dashboard
+                  </p>
 
-            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-600">
-              GATE CSE
-            </div>
+                  <h2 className="mt-1 text-3xl font-bold tracking-tight text-slate-900">
+                    Welcome back 👋
+                  </h2>
 
-            <AccountSettingsPanel />
-          </div>
-        </div>
-      </header>
+                  <p className="mt-2 max-w-2xl text-slate-600">
+                    Track your preparation, complete topics, solve PYQs, and
+                    stay consistent with your GATE preparation.
+                  </p>
+                </div>
 
-      <div className="mx-auto max-w-7xl px-6 py-8">
-        <section className="mb-8">
-          <p className="text-sm font-medium text-slate-500">
-            Dashboard
-          </p>
+                <div className="hidden items-center gap-3 sm:flex">
+                  <Link
+                    href="/pyqs"
+                    className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+                  >
+                    Practice PYQs
+                  </Link>
 
-          <h2 className="mt-1 text-3xl font-bold tracking-tight text-slate-900">
-            Welcome back 👋
-          </h2>
+                  <AccountSettingsPanel />
+                </div>
+              </div>
+            </section>
 
-          <p className="mt-2 max-w-2xl text-slate-600">
-            Track your preparation, complete topics, solve PYQs, and stay
-            consistent with your GATE preparation.
-          </p>
-        </section>
+            <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <DashboardProgress
+                topicIds={dbmsTopicIds}
+                mode="topics-completed"
+              />
 
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <DashboardProgress
-            topicIds={dbmsTopicIds}
-            mode="topics-completed"
-          />
+              <StudyHours />
 
-          <StudyHours />
+              <StudyStreak />
 
-          <StudyStreak />
+              {stats.map((stat) => (
+                <div
+                  key={stat.label}
+                  className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                >
+                  <p className="text-sm font-medium text-slate-500">
+                    {stat.label}
+                  </p>
 
-          {stats.map((stat) => (
-            <div
-              key={stat.label}
-              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-            >
-              <p className="text-sm font-medium text-slate-500">
-                {stat.label}
-              </p>
+                  <p className="mt-3 text-3xl font-bold text-slate-900">
+                    {stat.value}
+                  </p>
 
-              <p className="mt-3 text-3xl font-bold text-slate-900">
-                {stat.value}
-              </p>
+                  <p className="mt-2 text-sm text-slate-500">
+                    {stat.description}
+                  </p>
+                </div>
+              ))}
+            </section>
 
-              <p className="mt-2 text-sm text-slate-500">
-                {stat.description}
-              </p>
-            </div>
-          ))}
-        </section>
+            <section className="mt-8 grid gap-6 lg:grid-cols-3">
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md lg:col-span-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-900">
+                      Weekly Study Progress
+                    </h3>
 
-        <section className="mt-8 grid gap-6 lg:grid-cols-3">
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
-            <div className="flex items-center justify-between">
-              <div>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Your study activity for the current week
+                    </p>
+                  </div>
+
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                    This Week
+                  </span>
+                </div>
+
+                <WeeklyStudyProgress />
+              </div>
+
+              <GateCountdown />
+            </section>
+
+            <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900">
+                    Subject Progress
+                  </h3>
+
+                  <p className="mt-1 text-sm text-slate-500">
+                    Track your preparation across GATE CSE subjects
+                  </p>
+                </div>
+
+                <div className="rounded-lg bg-slate-50 px-3 py-2 text-xs font-medium text-slate-500">
+                  Overall GATE progress will be enabled as subjects are added
+                </div>
+              </div>
+
+              <div className="mt-6 grid gap-4 md:grid-cols-2">
+                {subjects.map((subject) =>
+                  subject.shortName === "DBMS" ? (
+                    <Link
+                      key={subject.shortName}
+                      href="/subjects/dbms"
+                      className="block rounded-xl transition hover:-translate-y-0.5 hover:shadow-md"
+                    >
+                      <DashboardProgress
+                        topicIds={dbmsTopicIds}
+                        mode="dbms-progress"
+                      />
+                    </Link>
+                  ) : (
+                    <div
+                      key={subject.shortName}
+                      className="rounded-xl border border-slate-200 p-4 transition hover:border-slate-300 hover:shadow-sm"
+                    >
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="font-semibold text-slate-900">
+                            {subject.shortName}
+                          </p>
+
+                          <p className="mt-1 text-sm text-slate-500">
+                            {subject.name}
+                          </p>
+                        </div>
+
+                        <span className="text-sm font-semibold text-slate-600">
+                          Coming Soon
+                        </span>
+                      </div>
+
+                      <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className="h-full rounded-full bg-slate-300"
+                          style={{
+                            width: "0%",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ),
+                )}
+              </div>
+            </section>
+
+            <section className="mt-8 grid gap-6 md:grid-cols-2">
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md">
                 <h3 className="text-lg font-semibold text-slate-900">
-                  Weekly Study Progress
+                  Today&apos;s Tasks
                 </h3>
 
                 <p className="mt-1 text-sm text-slate-500">
-                  Your study activity for the current week
+                  Your daily preparation checklist
                 </p>
+
+                <TodayTasks />
               </div>
 
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                This Week
-              </span>
-            </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md">
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Recent Activity
+                </h3>
 
-            <WeeklyStudyProgress />
-          </div>
+                <p className="mt-1 text-sm text-slate-500">
+                  Your latest preparation activity
+                </p>
 
-          <GateCountdown />
-        </section>
+                <div className="mt-6 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
+                  <p className="font-medium text-slate-700">
+                    No activity yet
+                  </p>
 
-        <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-slate-900">
-                Subject Progress
-              </h3>
-
-              <p className="mt-1 text-sm text-slate-500">
-                Track your preparation across GATE CSE subjects
-              </p>
-            </div>
-
-            <div className="rounded-lg bg-slate-50 px-3 py-2 text-xs font-medium text-slate-500">
-              Overall GATE progress will be enabled as subjects are added
-            </div>
-          </div>
-
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
-            {subjects.map((subject) =>
-              subject.shortName === "DBMS" ? (
-                <Link
-                  key={subject.shortName}
-                  href="/subjects/dbms"
-                  className="block rounded-xl transition hover:-translate-y-0.5 hover:shadow-md"
-                >
-                  <DashboardProgress
-                    topicIds={dbmsTopicIds}
-                    mode="dbms-progress"
-                  />
-                </Link>
-              ) : (
-                <div
-                  key={subject.shortName}
-                  className="rounded-xl border border-slate-200 p-4"
-                >
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="font-semibold text-slate-900">
-                        {subject.shortName}
-                      </p>
-
-                      <p className="mt-1 text-sm text-slate-500">
-                        {subject.name}
-                      </p>
-                    </div>
-
-                    <span className="text-sm font-semibold text-slate-600">
-                      Coming Soon
-                    </span>
-                  </div>
-
-                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className="h-full rounded-full bg-slate-300"
-                      style={{
-                        width: "0%",
-                      }}
-                    />
-                  </div>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Completed topics and solved questions will appear here.
+                  </p>
                 </div>
-              ),
-            )}
+              </div>
+            </section>
           </div>
-        </section>
-
-        <section className="mt-8 grid gap-6 md:grid-cols-2">
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-slate-900">
-              Today&apos;s Tasks
-            </h3>
-
-            <p className="mt-1 text-sm text-slate-500">
-              Your daily preparation checklist
-            </p>
-
-            <TodayTasks />
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-slate-900">
-              Recent Activity
-            </h3>
-
-            <p className="mt-1 text-sm text-slate-500">
-              Your latest preparation activity
-            </p>
-
-            <div className="mt-6 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
-              <p className="font-medium text-slate-700">
-                No activity yet
-              </p>
-
-              <p className="mt-1 text-sm text-slate-500">
-                Completed topics and solved questions will appear here.
-              </p>
-            </div>
-          </div>
-        </section>
+        </main>
       </div>
-    </main>
+    </div>
   );
 }
