@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import AccountSettingsPanel from "@/components/layout/AccountSettingsPanel";
 
 const navigation = [
   {
@@ -110,34 +111,19 @@ export default function Sidebar() {
 
       {/* Bottom section */}
       <div className="border-t border-slate-800 p-4">
-        <Link
-          href="/settings"
-          className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition ${
-            pathname.startsWith("/settings")
-              ? "!bg-white !text-slate-950"
-              : "text-slate-400 hover:bg-slate-900 hover:text-white"
-          }`}
-        >
-          <span
-            className={`flex h-8 w-8 items-center justify-center rounded-lg text-base ${
-              pathname.startsWith("/settings")
-                ? "!bg-slate-100 !text-slate-900"
-                : "bg-slate-900"
-            }`}
-          >
-            ⚙
-          </span>
+        <div className="flex items-center justify-between rounded-xl px-3 py-2">
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-slate-300">
+              Account
+            </p>
 
-          <span
-            className={
-              pathname.startsWith("/settings")
-                ? "!text-slate-950"
-                : "text-inherit"
-            }
-          >
-            Settings
-          </span>
-        </Link>
+            <p className="mt-1 text-[11px] text-slate-500">
+              Preferences & logout
+            </p>
+          </div>
+
+          <AccountSettingsPanel />
+        </div>
 
         <div className="mt-4 rounded-xl border border-slate-800 bg-slate-900/70 p-3">
           <p className="text-xs font-medium text-slate-300">
