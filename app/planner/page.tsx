@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Sidebar from "@/components/layout/Sidebar";
-import Header from "@/components/layout/Header";
+import Link from "next/link";
 import PlannerCalendar from "@/components/planner/PlannerCalendar";
 import StudyPlan from "@/components/planner/StudyPlan";
 import StudySessionHistory from "@/components/planner/StudySessionHistory";
@@ -11,6 +10,8 @@ import StudyTasks from "@/components/planner/StudyTasks";
 import StudyTimer from "@/components/planner/StudyTimer";
 import TodayTasksSummary from "@/components/planner/TodayTasksSummary";
 import WeeklyTargetSummary from "@/components/planner/WeeklyTargetSummary";
+import Sidebar from "@/components/layout/Sidebar";
+import Header from "@/components/layout/Header";
 
 export default function PlannerPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -26,35 +27,32 @@ export default function PlannerPage() {
           <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
             {/* Page Header */}
             <section className="mb-8">
-              <p className="text-sm font-medium text-slate-500">
-                Workspace
-              </p>
-
-              <div className="mt-1 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                 <div>
-                  <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                    Workspace · Planning
+                  </p>
+
+                  <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">
                     Study Planner
                   </h1>
 
-                  <p className="mt-2 max-w-2xl text-slate-600">
-                    Plan your daily study tasks, weekly targets, revision
-                    schedule, and study hours.
+                  <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
+                    Plan your study days, manage tasks, track your weekly
+                    target, and record focused study sessions.
                   </p>
                 </div>
 
-                <div className="hidden rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:block">
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                    Planning Workspace
-                  </p>
-
-                  <p className="mt-1 text-sm font-semibold text-slate-700">
-                    Stay consistent
-                  </p>
-                </div>
+                <Link
+                  href="/"
+                  className="inline-flex shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+                >
+                  ← Dashboard
+                </Link>
               </div>
             </section>
 
-            {/* Planner Overview */}
+            {/* Summary Cards */}
             <section className="grid gap-4 md:grid-cols-3">
               <TodayTasksSummary selectedDate={selectedDate} />
 
@@ -64,7 +62,7 @@ export default function PlannerPage() {
             </section>
 
             {/* Calendar */}
-            <section className="mt-6">
+            <section className="mt-8">
               <PlannerCalendar
                 selectedDate={selectedDate}
                 onDateSelect={setSelectedDate}
@@ -72,22 +70,22 @@ export default function PlannerPage() {
             </section>
 
             {/* Tasks */}
-            <section className="mt-6">
+            <section className="mt-8">
               <StudyTasks selectedDate={selectedDate} />
             </section>
 
-            {/* Weekly Study Plan */}
-            <section className="mt-6">
+            {/* Study Plan */}
+            <section className="mt-8">
               <StudyPlan />
             </section>
 
             {/* Study Timer */}
-            <section className="mt-6">
+            <section className="mt-8">
               <StudyTimer />
             </section>
 
             {/* Session History */}
-            <section className="mt-6">
+            <section className="mt-8">
               <StudySessionHistory />
             </section>
           </div>

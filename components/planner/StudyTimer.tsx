@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
-const ACTIVE_SESSION_KEY = "gate-master-tracker-active-study-session";
+const ACTIVE_SESSION_KEY = "gate-master-active-study-session";
 
 function formatDuration(totalSeconds: number) {
   const hours = Math.floor(totalSeconds / 3600);
@@ -17,28 +17,37 @@ function formatDuration(totalSeconds: number) {
 
 export default function StudyTimer() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [startedAt, setStartedAt] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<number | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [error, setError] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const isRunning = Boolean(startedAt && sessionId);
 
   useEffect(() => {
-    async function loadActiveSession() {
+    let cancelled = false;
+
+    async function restoreSession() {
       setLoading(true);
-      setError("");
 
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
+      if (cancelled) {
+        return;
+      }
+
       if (!user) {
-        setLoggedIn(false);
+        setUserId(null);
         setLoading(false);
         return;
       }
 
-      setLoggedIn(true);
+      setUserId(user.id);
 
       const storedSessionId = window.localStorage.getItem(
         ACTIVE_SESSION_KEY,
@@ -51,242 +60,323 @@ export default function StudyTimer() {
 
       const parsedSessionId = Number(storedSessionId);
 
-      if (!Number.isInteger(parsedSessionId)) {
+      if (!Number.isFinite(parsedSessionId)) {
         window.localStorage.removeItem(ACTIVE_SESSION_KEY);
         setLoading(false);
         return;
       }
 
-      const { data, error: sessionError } = await supabase
+      const { data, error } = await supabase
         .from("study_sessions")
         .select("id, started_at, ended_at")
         .eq("id", parsedSessionId)
         .eq("user_id", user.id)
+        .is("ended_at", null)
         .maybeSingle();
 
-      if (sessionError) {
-        setError(sessionError.message);
-        setLoading(false);
+      if (cancelled) {
         return;
       }
 
-      if (!data || data.ended_at) {
+      if (error || !data) {
         window.localStorage.removeItem(ACTIVE_SESSION_KEY);
         setLoading(false);
         return;
       }
 
-      const startedAt = new Date(data.started_at).getTime();
+      setSessionId(data.id);
+      setStartedAt(data.started_at);
+
+      const startedTime = new Date(data.started_at).getTime();
       const currentTime = Date.now();
-      const seconds = Math.max(
-        0,
-        Math.floor((currentTime - startedAt) / 1000),
+
+      setElapsedSeconds(
+        Math.max(
+          0,
+          Math.floor((currentTime - startedTime) / 1000),
+        ),
       );
 
-      setSessionId(data.id);
-      setElapsedSeconds(seconds);
       setLoading(false);
     }
 
-    loadActiveSession();
+    restoreSession();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
-    if (sessionId === null) {
+    if (!isRunning || !startedAt) {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+
       return;
     }
 
-    const interval = window.setInterval(() => {
-      setElapsedSeconds((currentSeconds) => currentSeconds + 1);
-    }, 1000);
+    const updateElapsed = () => {
+      const startedTime = new Date(startedAt).getTime();
+      const currentTime = Date.now();
+
+      setElapsedSeconds(
+        Math.max(
+          0,
+          Math.floor((currentTime - startedTime) / 1000),
+        ),
+      );
+    };
+
+    updateElapsed();
+
+    timerRef.current = setInterval(updateElapsed, 1000);
 
     return () => {
-      window.clearInterval(interval);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     };
-  }, [sessionId]);
+  }, [isRunning, startedAt]);
 
-  async function startSession() {
-    if (saving || sessionId !== null) {
+  const startTimer = async () => {
+    if (!userId || actionLoading || isRunning) {
       return;
     }
 
-    setSaving(true);
-    setError("");
+    setActionLoading(true);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const now = new Date().toISOString();
 
-    if (!user) {
-      setLoggedIn(false);
-      setSaving(false);
-      return;
-    }
-
-    const startedAt = new Date();
-
-    const { data, error: sessionError } = await supabase
+    const { data, error } = await supabase
       .from("study_sessions")
       .insert({
-        user_id: user.id,
-        started_at: startedAt.toISOString(),
-        ended_at: null,
+        user_id: userId,
+        started_at: now,
         duration_minutes: 0,
       })
-      .select("id")
+      .select("id, started_at")
       .single();
 
-    if (sessionError || !data) {
-      setError(
-        sessionError?.message ?? "Unable to start study session.",
-      );
-      setSaving(false);
+    if (error || !data) {
+      console.error("Failed to start study session:", error);
+      setActionLoading(false);
       return;
     }
-
-    setSessionId(data.id);
-    setElapsedSeconds(0);
 
     window.localStorage.setItem(
       ACTIVE_SESSION_KEY,
       String(data.id),
     );
 
-    setSaving(false);
-  }
+    setSessionId(data.id);
+    setStartedAt(data.started_at);
+    setElapsedSeconds(0);
+    setActionLoading(false);
+  };
 
-  async function stopSession() {
-    if (saving || sessionId === null) {
+  const stopTimer = async () => {
+    if (!userId || !sessionId || !startedAt || actionLoading) {
       return;
     }
 
-    setSaving(true);
-    setError("");
+    setActionLoading(true);
 
     const endedAt = new Date();
-    const durationMinutes = Math.floor(elapsedSeconds / 60);
+    const startedTime = new Date(startedAt).getTime();
 
-    const { error: sessionError } = await supabase
+    const durationSeconds = Math.max(
+      0,
+      Math.floor((endedAt.getTime() - startedTime) / 1000),
+    );
+
+    const durationMinutes = Math.floor(durationSeconds / 60);
+
+    const { error } = await supabase
       .from("study_sessions")
       .update({
         ended_at: endedAt.toISOString(),
         duration_minutes: durationMinutes,
       })
-      .eq("id", sessionId);
+      .eq("id", sessionId)
+      .eq("user_id", userId);
 
-    if (sessionError) {
-      setError(sessionError.message);
-      setSaving(false);
+    if (error) {
+      console.error("Failed to stop study session:", error);
+      setActionLoading(false);
       return;
     }
 
     window.localStorage.removeItem(ACTIVE_SESSION_KEY);
 
     setSessionId(null);
+    setStartedAt(null);
     setElapsedSeconds(0);
-    setSaving(false);
-  }
+    setActionLoading(false);
+  };
 
-  if (loading) {
-    return (
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-sm font-medium text-slate-500">
-          Loading study timer...
-        </p>
-      </section>
-    );
-  }
-
-  if (!loggedIn) {
-    return (
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-sm font-medium text-slate-500">
-          Study Timer
-        </p>
-
-        <h2 className="mt-1 text-xl font-bold text-slate-900">
-          Login to track study time
-        </h2>
-
-        <p className="mt-2 text-sm leading-6 text-slate-500">
-          Your study sessions will be saved to your account.
-        </p>
-
-        <a
-          href="/login"
-          className="mt-5 inline-flex rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
-        >
-          Login
-        </a>
-      </section>
-    );
-  }
-
-  const isRunning = sessionId !== null;
+  const progressSeconds = elapsedSeconds % 3600;
+  const progressPercent = Math.min(
+    (progressSeconds / 3600) * 100,
+    100,
+  );
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      {/* Header */}
+      <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
         <div>
-          <p className="text-sm font-medium text-slate-500">
-            Study Timer
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+            Focus Session
           </p>
 
-          <h2 className="mt-1 text-xl font-bold text-slate-900">
-            {isRunning ? "Study session in progress" : "Ready to study?"}
+          <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950">
+            Study Timer
           </h2>
 
-          <p className="mt-2 text-sm text-slate-500">
-            {isRunning
-              ? "Keep studying and stop the timer when you finish."
-              : "Start a session to record your study time."}
-          </p>
-        </div>
-
-        <div className="rounded-xl bg-slate-100 px-6 py-4 text-center">
-          <p className="font-mono text-3xl font-bold tracking-tight text-slate-900">
-            {formatDuration(elapsedSeconds)}
-          </p>
-
-          <p className="mt-1 text-xs font-medium text-slate-500">
-            {isRunning ? "Current session" : "Not running"}
+          <p className="mt-1 text-sm text-slate-500">
+            Track focused study time automatically in your study history.
           </p>
         </div>
       </div>
 
-      <div className="mt-6">
-        {isRunning ? (
-          <button
-            type="button"
-            onClick={stopSession}
-            disabled={saving}
-            className="w-full rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {saving ? "Saving session..." : "Stop Study Session"}
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={startSession}
-            disabled={saving}
-            className="w-full rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {saving ? "Starting..." : "Start Study Session"}
-          </button>
-        )}
+      {/* Timer Area */}
+      <div className="grid gap-6 px-5 py-7 lg:grid-cols-[1fr_280px] lg:items-center sm:px-6">
+        <div>
+          <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 px-6 py-8 text-center">
+            <div className="pointer-events-none absolute -right-20 -top-20 h-48 w-48 rounded-full border border-white/10" />
+            <div className="pointer-events-none absolute -bottom-24 -left-20 h-56 w-56 rounded-full border border-white/5" />
+
+            <div className="relative">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/10">
+                <span
+                  className={`h-3 w-3 rounded-full ${
+                    isRunning
+                      ? "animate-pulse bg-white"
+                      : "bg-slate-500"
+                  }`}
+                />
+              </div>
+
+              <p className="mt-4 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                {isRunning ? "Focus session active" : "Ready to focus"}
+              </p>
+
+              <div className="mt-3 font-mono text-4xl font-bold tracking-tight text-white sm:text-5xl">
+                {formatDuration(elapsedSeconds)}
+              </div>
+
+              <p className="mt-3 text-xs text-slate-400">
+                {isRunning
+                  ? "Keep going. Your session is being recorded."
+                  : "Start the timer when you begin studying."}
+              </p>
+            </div>
+          </div>
+
+          {/* Session Progress */}
+          <div className="mt-4">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-medium text-slate-500">
+                Current hour
+              </span>
+
+              <span className="font-semibold text-slate-800">
+                {Math.floor(progressSeconds / 60)} min
+              </span>
+            </div>
+
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
+              <div
+                className="h-full rounded-full bg-slate-950 transition-all duration-1000"
+                style={{
+                  width: `${progressPercent}%`,
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Controls */}
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            Session Controls
+          </p>
+
+          <div className="mt-4 space-y-3">
+            {!isRunning ? (
+              <button
+                type="button"
+                onClick={startTimer}
+                disabled={!userId || loading || actionLoading}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+              >
+                <span className="text-base">▶</span>
+                {actionLoading ? "Starting..." : "Start Session"}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={stopTimer}
+                disabled={actionLoading}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+              >
+                <span className="text-base">■</span>
+                {actionLoading ? "Saving..." : "Stop Session"}
+              </button>
+            )}
+
+            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+              <p className="text-xs text-slate-500">
+                Session status
+              </p>
+
+              <div className="mt-1 flex items-center gap-2">
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    isRunning ? "animate-pulse bg-slate-950" : "bg-slate-300"
+                  }`}
+                />
+
+                <span className="text-sm font-semibold text-slate-800">
+                  {loading
+                    ? "Loading..."
+                    : isRunning
+                      ? "Recording"
+                      : "Not active"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {!userId && !loading && (
+            <p className="mt-4 text-center text-xs font-medium text-amber-600">
+              Please log in to track study sessions.
+            </p>
+          )}
+        </div>
       </div>
 
-      {error && (
-        <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {error}
-        </div>
-      )}
+      {/* Footer */}
+      <div className="border-t border-slate-100 bg-slate-50/60 px-5 py-4 sm:px-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
+          <span className="text-slate-500">
+            Study sessions are automatically saved to your history.
+          </span>
 
-      {!isRunning && (
-        <p className="mt-4 text-xs leading-5 text-slate-500">
-          Your session is saved automatically when you stop the timer.
-        </p>
-      )}
+          {isRunning && startedAt && (
+            <span className="font-medium text-slate-700">
+              Started{" "}
+              {new Date(startedAt).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
+          )}
+        </div>
+      </div>
     </section>
   );
 }

@@ -3,25 +3,20 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
-const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
-interface PlannerCalendarProps {
+type PlannerCalendarProps = {
   selectedDate: Date;
   onDateSelect: (date: Date) => void;
-}
+};
 
-interface StudyTaskDate {
+type TaskDateRow = {
   scheduled_date: string;
+};
+
+function startOfMonth(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
 }
 
-function getMonthLabel(date: Date) {
-  return date.toLocaleDateString("en-IN", {
-    month: "long",
-    year: "numeric",
-  });
-}
-
-function getDateKey(date: Date) {
+function formatDateKey(date: Date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
@@ -29,262 +24,335 @@ function getDateKey(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
-function getCalendarDays(date: Date) {
-  const year = date.getFullYear();
-  const month = date.getMonth();
-
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-
-  const firstDayIndex = (firstDay.getDay() + 6) % 7;
-  const totalDays = lastDay.getDate();
-
-  const days: Array<Date | null> = [];
-
-  for (let index = 0; index < firstDayIndex; index += 1) {
-    days.push(null);
-  }
-
-  for (let day = 1; day <= totalDays; day += 1) {
-    days.push(new Date(year, month, day));
-  }
-
-  return days;
+function isSameDate(first: Date, second: Date) {
+  return (
+    first.getFullYear() === second.getFullYear() &&
+    first.getMonth() === second.getMonth() &&
+    first.getDate() === second.getDate()
+  );
 }
 
-function isSameDate(firstDate: Date, secondDate: Date) {
-  return (
-    firstDate.getFullYear() === secondDate.getFullYear() &&
-    firstDate.getMonth() === secondDate.getMonth() &&
-    firstDate.getDate() === secondDate.getDate()
-  );
+function isToday(date: Date) {
+  return isSameDate(date, new Date());
 }
 
 export default function PlannerCalendar({
   selectedDate,
   onDateSelect,
 }: PlannerCalendarProps) {
-  const today = useMemo(() => new Date(), []);
-
   const [currentMonth, setCurrentMonth] = useState(
-    new Date(today.getFullYear(), today.getMonth(), 1),
+    startOfMonth(selectedDate),
   );
-
-  const [taskDates, setTaskDates] = useState<Set<string>>(
-    new Set(),
-  );
-
-  const [loadingTasks, setLoadingTasks] = useState(true);
-
-  const calendarDays = useMemo(
-    () => getCalendarDays(currentMonth),
-    [currentMonth],
-  );
+  const [taskDates, setTaskDates] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    async function loadMonthTaskDates() {
-      setLoadingTasks(true);
+    let cancelled = false;
 
+    async function loadTaskDates() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
-      if (!user) {
+      if (!user || cancelled) {
         setTaskDates(new Set());
-        setLoadingTasks(false);
         return;
       }
 
-      const year = currentMonth.getFullYear();
-      const month = currentMonth.getMonth();
-
-      const monthStart = getDateKey(
-        new Date(year, month, 1),
+      const firstDay = new Date(
+        currentMonth.getFullYear(),
+        currentMonth.getMonth(),
+        1,
       );
 
-      const nextMonthStart = getDateKey(
-        new Date(year, month + 1, 1),
+      const lastDay = new Date(
+        currentMonth.getFullYear(),
+        currentMonth.getMonth() + 1,
+        0,
       );
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("study_tasks")
         .select("scheduled_date")
         .eq("user_id", user.id)
-        .gte("scheduled_date", monthStart)
-        .lt("scheduled_date", nextMonthStart);
+        .gte("scheduled_date", formatDateKey(firstDay))
+        .lte("scheduled_date", formatDateKey(lastDay));
 
-      if (error) {
-        setTaskDates(new Set());
-        setLoadingTasks(false);
+      if (cancelled) {
         return;
       }
 
       const dates = new Set(
-        ((data ?? []) as StudyTaskDate[]).map(
+        ((data ?? []) as TaskDateRow[]).map(
           (task) => task.scheduled_date,
         ),
       );
 
       setTaskDates(dates);
-      setLoadingTasks(false);
     }
 
-    loadMonthTaskDates();
+    loadTaskDates();
+
+    return () => {
+      cancelled = true;
+    };
   }, [currentMonth]);
 
-  function goToPreviousMonth() {
-    setCurrentMonth(
-      (currentDate) =>
-        new Date(
-          currentDate.getFullYear(),
-          currentDate.getMonth() - 1,
-          1,
-        ),
-    );
-  }
+  const calendarDays = useMemo(() => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
 
-  function goToNextMonth() {
-    setCurrentMonth(
-      (currentDate) =>
-        new Date(
-          currentDate.getFullYear(),
-          currentDate.getMonth() + 1,
-          1,
-        ),
-    );
-  }
+    const firstDayOfMonth = new Date(year, month, 1);
+    const lastDayOfMonth = new Date(year, month + 1, 0);
 
-  function selectDate(date: Date) {
+    const firstWeekday = firstDayOfMonth.getDay();
+    const mondayOffset = firstWeekday === 0 ? 6 : firstWeekday - 1;
+
+    const daysInMonth = lastDayOfMonth.getDate();
+
+    const previousMonthDays = Array.from(
+      { length: mondayOffset },
+      (_, index) =>
+        new Date(year, month, -(mondayOffset - index - 1)),
+    );
+
+    const currentMonthDays = Array.from(
+      { length: daysInMonth },
+      (_, index) => new Date(year, month, index + 1),
+    );
+
+    const totalCells =
+      previousMonthDays.length + currentMonthDays.length;
+
+    const trailingDays = (7 - (totalCells % 7)) % 7;
+
+    const nextMonthDays = Array.from(
+      { length: trailingDays },
+      (_, index) => new Date(year, month + 1, index + 1),
+    );
+
+    return [
+      ...previousMonthDays,
+      ...currentMonthDays,
+      ...nextMonthDays,
+    ];
+  }, [currentMonth]);
+
+  const monthLabel = currentMonth.toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+
+  const goToPreviousMonth = () => {
+    setCurrentMonth(
+      new Date(
+        currentMonth.getFullYear(),
+        currentMonth.getMonth() - 1,
+        1,
+      ),
+    );
+  };
+
+  const goToNextMonth = () => {
+    setCurrentMonth(
+      new Date(
+        currentMonth.getFullYear(),
+        currentMonth.getMonth() + 1,
+        1,
+      ),
+    );
+  };
+
+  const goToToday = () => {
+    const today = new Date();
+
+    setCurrentMonth(startOfMonth(today));
+    onDateSelect(today);
+  };
+
+  const handleDateSelect = (date: Date) => {
+    setCurrentMonth(startOfMonth(date));
     onDateSelect(date);
-  }
+  };
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm font-medium text-slate-500">
-            Study Calendar
-          </p>
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      {/* Calendar Header */}
+      <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+              Study Calendar
+            </p>
 
-          <h2 className="mt-1 text-xl font-bold text-slate-900">
-            Plan your study days
-          </h2>
-        </div>
+            <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950">
+              Plan your study days
+            </h2>
 
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={goToPreviousMonth}
-            aria-label="Previous month"
-            className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100"
-          >
-            ←
-          </button>
-
-          <div className="min-w-40 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-center text-sm font-semibold text-slate-700">
-            {getMonthLabel(currentMonth)}
+            <p className="mt-1 text-sm text-slate-500">
+              Select a date to view and manage your study tasks.
+            </p>
           </div>
 
-          <button
-            type="button"
-            onClick={goToNextMonth}
-            aria-label="Next month"
-            className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100"
-          >
-            →
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={goToPreviousMonth}
+              aria-label="Previous month"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-lg font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950"
+            >
+              ←
+            </button>
+
+            <div className="min-w-[155px] rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-center">
+              <p className="text-sm font-semibold text-slate-800">
+                {monthLabel}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={goToNextMonth}
+              aria-label="Next month"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-lg font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950"
+            >
+              →
+            </button>
+
+            <button
+              type="button"
+              onClick={goToToday}
+              className="hidden rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 sm:inline-flex"
+            >
+              Today
+            </button>
+          </div>
+        </div>
+
+        {/* Selected Date */}
+        <div className="mt-5 flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+          <div>
+            <p className="text-xs font-medium text-slate-500">
+              Selected Date
+            </p>
+
+            <p className="mt-0.5 text-sm font-semibold text-slate-900">
+              {selectedDate.toLocaleDateString("en-US", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}
+            </p>
+          </div>
+
+          {isToday(selectedDate) && (
+            <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white">
+              Today
+            </span>
+          )}
         </div>
       </div>
 
-      <div className="mt-4 rounded-xl bg-slate-50 px-4 py-3">
-        <p className="text-sm font-medium text-slate-500">
-          Selected Date
-        </p>
-
-        <p className="mt-1 text-sm font-semibold text-slate-900">
-          {selectedDate.toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "long",
-            year: "numeric",
-          })}
-        </p>
-      </div>
-
-      <div className="mt-6 overflow-hidden rounded-xl border border-slate-200">
-        <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50">
-          {weekDays.map((day) => (
+      {/* Weekday Header */}
+      <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50/80">
+        {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(
+          (day) => (
             <div
               key={day}
-              className="px-2 py-3 text-center text-xs font-semibold text-slate-500 sm:text-sm"
+              className="px-2 py-3 text-center text-[11px] font-bold uppercase tracking-wider text-slate-400 sm:text-xs"
             >
               {day}
             </div>
-          ))}
-        </div>
+          ),
+        )}
+      </div>
 
-        <div className="grid grid-cols-7">
-          {calendarDays.map((date, index) => {
-            if (!date) {
-              return (
-                <div
-                  key={`empty-${index}`}
-                  className="min-h-20 border-b border-r border-slate-200 bg-slate-50/50 p-2 sm:min-h-24"
-                />
-              );
-            }
+      {/* Calendar Grid */}
+      <div className="grid grid-cols-7">
+        {calendarDays.map((date) => {
+          const dateKey = formatDateKey(date);
 
-            const isToday = isSameDate(date, today);
-            const isSelected = isSameDate(date, selectedDate);
-            const hasTasks = taskDates.has(getDateKey(date));
+          const isCurrentMonth =
+            date.getMonth() === currentMonth.getMonth() &&
+            date.getFullYear() === currentMonth.getFullYear();
 
-            return (
-              <button
-                key={date.toISOString()}
-                type="button"
-                onClick={() => selectDate(date)}
-                className={`min-h-20 border-b border-r border-slate-200 p-2 text-left transition sm:min-h-24 ${
-                  isSelected
-                    ? "bg-slate-100"
-                    : "bg-white hover:bg-slate-50"
-                }`}
-              >
-                <div
-                  className={`flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold ${
-                    isSelected
-                      ? "bg-slate-900 text-white"
-                      : "text-slate-700"
+          const selected = isSameDate(date, selectedDate);
+          const today = isToday(date);
+          const hasTasks = taskDates.has(dateKey);
+
+          return (
+            <button
+              key={dateKey}
+              type="button"
+              onClick={() => handleDateSelect(date)}
+              className={`group relative min-h-[82px] border-b border-r border-slate-100 p-2 text-left transition sm:min-h-[96px] sm:p-3 ${
+                isCurrentMonth
+                  ? "bg-white hover:bg-slate-50"
+                  : "bg-slate-50/60 hover:bg-slate-100/70"
+              } ${
+                selected
+                  ? "z-10 ring-2 ring-inset ring-slate-950"
+                  : ""
+              }`}
+            >
+              <div className="flex items-start justify-between">
+                <span
+                  className={`flex h-8 w-8 items-center justify-center rounded-lg text-sm font-semibold transition ${
+                    selected
+                      ? "bg-slate-950 text-white"
+                      : today
+                        ? "bg-slate-100 text-slate-950"
+                        : isCurrentMonth
+                          ? "text-slate-700 group-hover:bg-slate-100"
+                          : "text-slate-300"
                   }`}
                 >
                   {date.getDate()}
+                </span>
+
+                {today && !selected && (
+                  <span className="mt-1 mr-1 h-1.5 w-1.5 rounded-full bg-slate-950" />
+                )}
+              </div>
+
+              {hasTasks && (
+                <div className="mt-4 flex items-center gap-1.5">
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${
+                      selected ? "bg-white" : "bg-slate-950"
+                    }`}
+                  />
+
+                  <span
+                    className={`text-[10px] font-semibold ${
+                      selected
+                        ? "text-slate-600"
+                        : "text-slate-400"
+                    }`}
+                  >
+                    Tasks
+                  </span>
                 </div>
-
-                {isToday && (
-                  <p className="mt-2 text-[11px] font-medium text-slate-500">
-                    Today
-                  </p>
-                )}
-
-                {hasTasks && (
-                  <div className="mt-2 flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-slate-900" />
-
-                    <span className="text-[10px] font-medium text-slate-500">
-                      Tasks
-                    </span>
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
+              )}
+            </button>
+          );
+        })}
       </div>
 
-      {!loadingTasks && (
-        <div className="mt-4 flex items-center gap-2 text-xs font-medium text-slate-500">
-          <span className="h-1.5 w-1.5 rounded-full bg-slate-900" />
-          <span>Study tasks scheduled</span>
+      {/* Calendar Footer */}
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-slate-100 bg-slate-50/60 px-5 py-3 text-xs text-slate-500 sm:px-6">
+        <div className="flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-slate-950" />
+          <span>Tasks scheduled</span>
         </div>
-      )}
-    </section>
+
+        <div className="flex items-center gap-2">
+          <span className="flex h-4 w-4 items-center justify-center rounded bg-slate-950 text-[9px] text-white">
+            1
+          </span>
+          <span>Selected date</span>
+        </div>
+      </div>
+    </div>
   );
 }
