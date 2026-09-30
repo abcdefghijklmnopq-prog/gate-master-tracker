@@ -33,6 +33,12 @@ export default function RevisionPage() {
   const [topics, setTopics] = useState<RevisionTopic[]>([]);
   const [loading, setLoading] = useState(true);
   const [userLoggedIn, setUserLoggedIn] = useState(false);
+  const [savingTopicId, setSavingTopicId] = useState<string | null>(
+    null,
+  );
+  const [actionError, setActionError] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -159,6 +165,61 @@ export default function RevisionPage() {
       ? Math.round((completedCount / topics.length) * 100)
       : 0;
 
+  async function handleRevisionToggle(topic: RevisionTopic) {
+    setActionError(null);
+    setSavingTopicId(topic.id);
+
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setActionError("Please log in to update revision progress.");
+        return;
+      }
+
+      const nextRevisionState = !topic.revisionCompleted;
+
+      const { error } = await supabase
+        .from("topic_progress")
+        .upsert(
+          {
+            user_id: user.id,
+            topic_id: topic.id,
+            revision_completed: nextRevisionState,
+          },
+          {
+            onConflict: "user_id,topic_id",
+          },
+        );
+
+      if (error) {
+        console.error(
+          "Failed to update revision progress:",
+          error,
+        );
+        setActionError(
+          "Could not save revision progress. Please try again.",
+        );
+        return;
+      }
+
+      setTopics((currentTopics) =>
+        currentTopics.map((currentTopic) =>
+          currentTopic.id === topic.id
+            ? {
+                ...currentTopic,
+                revisionCompleted: nextRevisionState,
+              }
+            : currentTopic,
+        ),
+      );
+    } finally {
+      setSavingTopicId(null);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-50">
       <Sidebar />
@@ -222,7 +283,7 @@ export default function RevisionPage() {
 
                 <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100">
                   <div
-                    className="h-full rounded-full bg-slate-950 transition-all"
+                    className="h-full rounded-full bg-slate-950 transition-all duration-300"
                     style={{
                       width: `${completionPercentage}%`,
                     }}
@@ -265,6 +326,12 @@ export default function RevisionPage() {
               </div>
 
               <div className="p-5 sm:p-6">
+                {actionError && (
+                  <div className="mb-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    {actionError}
+                  </div>
+                )}
+
                 {loading ? (
                   <div className="space-y-3">
                     {[1, 2, 3].map((item) => (
@@ -305,61 +372,96 @@ export default function RevisionPage() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {topics.map((topic) => (
-                      <Link
-                        key={topic.id}
-                        href={`/subjects/dbms/${topic.chapter_id}/${topic.id}`}
-                        className="group flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 hover:shadow-sm"
-                      >
+                    {topics.map((topic) => {
+                      const isSaving = savingTopicId === topic.id;
+
+                      return (
                         <div
-                          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-bold ${
-                            topic.revisionCompleted
-                              ? "bg-slate-950 text-white"
-                              : "bg-slate-100 text-slate-700"
-                          }`}
+                          key={topic.id}
+                          className="group flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 hover:shadow-sm sm:flex-row sm:items-center"
                         >
-                          {topic.revisionCompleted
-                            ? "✓"
-                            : "R"}
-                        </div>
-
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-medium text-slate-400">
-                            {topic.chapterTitle}
-                          </p>
-
-                          <h3 className="mt-1 truncate text-sm font-semibold text-slate-900">
-                            {topic.title}
-                          </h3>
-
-                          <p className="mt-1 text-xs text-slate-500">
-                            {topic.revision_points.length} revision
-                            point
-                            {topic.revision_points.length === 1
-                              ? ""
-                              : "s"}
-                          </p>
-                        </div>
-
-                        <div className="shrink-0 text-right">
-                          <span
-                            className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${
-                              topic.revisionCompleted
-                                ? "bg-emerald-50 text-emerald-700"
-                                : "bg-slate-100 text-slate-500"
-                            }`}
+                          <Link
+                            href={`/subjects/dbms/${topic.chapter_id}/${topic.id}`}
+                            className="flex min-w-0 flex-1 items-center gap-4"
                           >
-                            {topic.revisionCompleted
-                              ? "Revised"
-                              : "Pending"}
-                          </span>
+                            <div
+                              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-bold ${
+                                topic.revisionCompleted
+                                  ? "bg-slate-950 text-white"
+                                  : "bg-slate-100 text-slate-700"
+                              }`}
+                            >
+                              {topic.revisionCompleted
+                                ? "✓"
+                                : "R"}
+                            </div>
 
-                          <p className="mt-2 text-sm font-semibold text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-slate-900">
-                            →
-                          </p>
+                            <div className="min-w-0">
+                              <p className="text-xs font-medium text-slate-400">
+                                {topic.chapterTitle}
+                              </p>
+
+                              <h3 className="mt-1 truncate text-sm font-semibold text-slate-900">
+                                {topic.title}
+                              </h3>
+
+                              <p className="mt-1 text-xs text-slate-500">
+                                {topic.revision_points.length}{" "}
+                                revision point
+                                {topic.revision_points.length === 1
+                                  ? ""
+                                  : "s"}
+                              </p>
+                            </div>
+                          </Link>
+
+                          <div className="flex shrink-0 items-center justify-between gap-3 sm:justify-end">
+                            <span
+                              className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${
+                                topic.revisionCompleted
+                                  ? "bg-emerald-50 text-emerald-700"
+                                  : "bg-slate-100 text-slate-500"
+                              }`}
+                            >
+                              {topic.revisionCompleted
+                                ? "Revised"
+                                : "Pending"}
+                            </span>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleRevisionToggle(topic)
+                              }
+                              disabled={isSaving}
+                              className={`min-w-[118px] rounded-xl px-3 py-2 text-xs font-semibold transition ${
+                                topic.revisionCompleted
+                                  ? "border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                                  : "bg-slate-950 text-white hover:bg-slate-800"
+                              } ${
+                                isSaving
+                                  ? "cursor-wait opacity-60"
+                                  : ""
+                              }`}
+                            >
+                              {isSaving
+                                ? "Saving..."
+                                : topic.revisionCompleted
+                                  ? "Mark Pending"
+                                  : "Mark Revised"}
+                            </button>
+
+                            <Link
+                              href={`/subjects/dbms/${topic.chapter_id}/${topic.id}`}
+                              aria-label={`Open ${topic.title}`}
+                              className="hidden text-sm font-semibold text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-slate-900 sm:block"
+                            >
+                              →
+                            </Link>
+                          </div>
                         </div>
-                      </Link>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
