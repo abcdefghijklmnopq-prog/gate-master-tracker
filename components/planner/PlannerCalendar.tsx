@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -9,11 +10,23 @@ interface PlannerCalendarProps {
   onDateSelect: (date: Date) => void;
 }
 
+interface StudyTaskDate {
+  scheduled_date: string;
+}
+
 function getMonthLabel(date: Date) {
   return date.toLocaleDateString("en-IN", {
     month: "long",
     year: "numeric",
   });
+}
+
+function getDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
 }
 
 function getCalendarDays(date: Date) {
@@ -57,10 +70,67 @@ export default function PlannerCalendar({
     new Date(today.getFullYear(), today.getMonth(), 1),
   );
 
+  const [taskDates, setTaskDates] = useState<Set<string>>(
+    new Set(),
+  );
+
+  const [loadingTasks, setLoadingTasks] = useState(true);
+
   const calendarDays = useMemo(
     () => getCalendarDays(currentMonth),
     [currentMonth],
   );
+
+  useEffect(() => {
+    async function loadMonthTaskDates() {
+      setLoadingTasks(true);
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setTaskDates(new Set());
+        setLoadingTasks(false);
+        return;
+      }
+
+      const year = currentMonth.getFullYear();
+      const month = currentMonth.getMonth();
+
+      const monthStart = getDateKey(
+        new Date(year, month, 1),
+      );
+
+      const nextMonthStart = getDateKey(
+        new Date(year, month + 1, 1),
+      );
+
+      const { data, error } = await supabase
+        .from("study_tasks")
+        .select("scheduled_date")
+        .eq("user_id", user.id)
+        .gte("scheduled_date", monthStart)
+        .lt("scheduled_date", nextMonthStart);
+
+      if (error) {
+        setTaskDates(new Set());
+        setLoadingTasks(false);
+        return;
+      }
+
+      const dates = new Set(
+        ((data ?? []) as StudyTaskDate[]).map(
+          (task) => task.scheduled_date,
+        ),
+      );
+
+      setTaskDates(dates);
+      setLoadingTasks(false);
+    }
+
+    loadMonthTaskDates();
+  }, [currentMonth]);
 
   function goToPreviousMonth() {
     setCurrentMonth(
@@ -165,6 +235,7 @@ export default function PlannerCalendar({
 
             const isToday = isSameDate(date, today);
             const isSelected = isSameDate(date, selectedDate);
+            const hasTasks = taskDates.has(getDateKey(date));
 
             return (
               <button
@@ -192,11 +263,28 @@ export default function PlannerCalendar({
                     Today
                   </p>
                 )}
+
+                {hasTasks && (
+                  <div className="mt-2 flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-slate-900" />
+
+                    <span className="text-[10px] font-medium text-slate-500">
+                      Tasks
+                    </span>
+                  </div>
+                )}
               </button>
             );
           })}
         </div>
       </div>
+
+      {!loadingTasks && (
+        <div className="mt-4 flex items-center gap-2 text-xs font-medium text-slate-500">
+          <span className="h-1.5 w-1.5 rounded-full bg-slate-900" />
+          <span>Study tasks scheduled</span>
+        </div>
+      )}
     </section>
   );
 }
