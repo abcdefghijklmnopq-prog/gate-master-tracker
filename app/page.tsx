@@ -2,6 +2,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import AccountSettingsPanel from "@/components/layout/AccountSettingsPanel";
 import DashboardProgress from "@/components/dashboard/DashboardProgress";
+import GateCountdown from "@/components/dashboard/GateCountdown";
 import StudyHours from "@/components/dashboard/StudyHours";
 import StudyStreak from "@/components/dashboard/StudyStreak";
 import TodayTasks from "@/components/dashboard/TodayTasks";
@@ -63,7 +64,6 @@ export default async function Home() {
 
   return (
     <main className="min-h-screen bg-slate-50">
-      {/* Header */}
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
           <div>
@@ -93,9 +93,7 @@ export default async function Home() {
         </div>
       </header>
 
-      {/* Dashboard */}
       <div className="mx-auto max-w-7xl px-6 py-8">
-        {/* Welcome */}
         <section className="mb-8">
           <p className="text-sm font-medium text-slate-500">
             Dashboard
@@ -111,7 +109,6 @@ export default async function Home() {
           </p>
         </section>
 
-        {/* Stats */}
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <DashboardProgress
             topicIds={dbmsTopicIds}
@@ -142,9 +139,7 @@ export default async function Home() {
           ))}
         </section>
 
-        {/* Main Grid */}
         <section className="mt-8 grid gap-6 lg:grid-cols-3">
-          {/* Weekly Progress */}
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
             <div className="flex items-center justify-between">
               <div>
@@ -165,42 +160,9 @@ export default async function Home() {
             <WeeklyStudyProgress />
           </div>
 
-          {/* GATE Countdown */}
-          <div className="rounded-2xl bg-slate-900 p-6 text-white shadow-sm">
-            <p className="text-sm font-medium text-slate-400">
-              GATE Countdown
-            </p>
-
-            <h3 className="mt-3 text-3xl font-bold">
-              Preparation Mode
-            </h3>
-
-            <p className="mt-3 text-sm leading-6 text-slate-400">
-              Your countdown and exam schedule will be connected here.
-            </p>
-
-            <div className="mt-8 grid grid-cols-3 gap-3">
-              {[
-                ["--", "Days"],
-                ["--", "Hours"],
-                ["--", "Minutes"],
-              ].map(([value, label]) => (
-                <div
-                  key={label}
-                  className="rounded-xl bg-white/10 p-3 text-center"
-                >
-                  <p className="text-xl font-bold">{value}</p>
-
-                  <p className="mt-1 text-xs text-slate-400">
-                    {label}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
+          <GateCountdown />
         </section>
 
-        {/* Subjects */}
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
@@ -267,7 +229,6 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* Today's Tasks */}
         <section className="mt-8 grid gap-6 md:grid-cols-2">
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <h3 className="text-lg font-semibold text-slate-900">
