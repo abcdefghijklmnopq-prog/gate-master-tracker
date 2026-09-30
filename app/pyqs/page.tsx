@@ -1,4 +1,6 @@
 import { supabase } from "@/lib/supabase";
+import Sidebar from "@/components/layout/Sidebar";
+import Header from "@/components/layout/Header";
 import PYQPractice from "@/components/pyqs/PYQPractice";
 
 interface PYQOption {
@@ -53,37 +55,64 @@ export default async function PYQsPage() {
   const questions = (pyqs ?? []) as PYQ[];
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10">
-      <div className="mx-auto max-w-7xl">
-        <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-          <p className="text-sm font-medium text-slate-500">
-            GATE Master Tracker
-          </p>
+    <div className="min-h-screen bg-slate-50">
+      <Sidebar />
 
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
-            Previous Year Questions
-          </h1>
+      <div className="lg:pl-64">
+        <Header />
 
-          <p className="mt-3 max-w-2xl text-slate-600">
-            Practice GATE previous year questions subject-wise, chapter-wise,
-            topic-wise, and year-wise.
-          </p>
-
-          {error ? (
-            <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4">
-              <p className="font-medium text-red-700">
-                Unable to load PYQs.
+        <main className="min-h-[calc(100vh-5rem)]">
+          <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
+            {/* Page Header */}
+            <section className="mb-8">
+              <p className="text-sm font-medium text-slate-500">
+                Practice Workspace
               </p>
 
-              <p className="mt-1 text-sm text-red-600">
-                Please check the Supabase connection and database table.
-              </p>
-            </div>
-          ) : null}
+              <div className="mt-1 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+                    Previous Year Questions
+                  </h1>
 
-          <PYQPractice questions={questions} />
-        </div>
+                  <p className="mt-2 max-w-2xl text-slate-600">
+                    Practice GATE previous year questions subject-wise,
+                    chapter-wise, topic-wise, and year-wise.
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                    Current Subject
+                  </p>
+
+                  <p className="mt-1 text-sm font-semibold text-slate-800">
+                    Database Management System
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            {/* Error State */}
+            {error ? (
+              <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-5">
+                <p className="font-semibold text-red-700">
+                  Unable to load PYQs.
+                </p>
+
+                <p className="mt-1 text-sm text-red-600">
+                  Please check the Supabase connection and database table.
+                </p>
+              </div>
+            ) : null}
+
+            {/* Practice Area */}
+            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
+              <PYQPractice questions={questions} />
+            </section>
+          </div>
+        </main>
       </div>
-    </main>
+    </div>
   );
 }
