@@ -202,6 +202,7 @@ export default function PYQPractice({
           );
 
           const isSubmitted = Boolean(attempt);
+          const attemptIsCorrect = attempt?.is_correct ?? false;
 
           return (
             <article
@@ -267,7 +268,7 @@ export default function PYQPractice({
                     const submittedWrong =
                       isSubmitted &&
                       selected &&
-                      !attempt?.is_correct;
+                      !attemptIsCorrect;
 
                     return (
                       <button
@@ -335,12 +336,12 @@ export default function PYQPractice({
                   {isSubmitted ? (
                     <p
                       className={`text-sm font-semibold ${
-                        attempt.is_correct
+                        attemptIsCorrect
                           ? "text-slate-900"
                           : "text-slate-600"
                       }`}
                     >
-                      {attempt.is_correct
+                      {attemptIsCorrect
                         ? "Correct"
                         : "Incorrect"}
                     </p>

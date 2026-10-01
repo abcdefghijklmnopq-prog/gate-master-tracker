@@ -582,11 +582,13 @@ export default function MockTestEngine({
       return;
     }
 
+    const activeStartedAt = attemptStartedAt;
+
     const totalDurationSeconds =
       durationMinutes * 60;
 
     const startedTimestamp = new Date(
-      attemptStartedAt,
+      activeStartedAt,
     ).getTime();
 
     function updateTimer() {
@@ -611,7 +613,7 @@ export default function MockTestEngine({
         window.setTimeout(() => {
           submitAttempt(
             attemptId,
-            attemptStartedAt,
+            activeStartedAt,
             answers,
           );
         }, 0);

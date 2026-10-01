@@ -52,7 +52,26 @@ export default async function PYQsPage() {
     .order("year", { ascending: false })
     .order("question_number");
 
-  const questions = (pyqs ?? []) as PYQ[];
+  const questions: PYQ[] = (pyqs ?? []).map((pyq) => ({
+    id: pyq.id,
+    year: pyq.year,
+    question_number: pyq.question_number,
+    question_text: pyq.question_text,
+    options: (pyq.options ?? []) as PYQOption[],
+    correct_answer: pyq.correct_answer,
+    marks: pyq.marks,
+    negative_marks: pyq.negative_marks,
+    difficulty: pyq.difficulty,
+    question_type: pyq.question_type,
+    source: pyq.source,
+    topic_id: pyq.topic_id,
+    topics:
+      pyq.topics && pyq.topics.length > 0
+        ? {
+            title: pyq.topics[0].title,
+          }
+        : null,
+  }));
 
   return (
     <div className="min-h-screen bg-slate-50">
