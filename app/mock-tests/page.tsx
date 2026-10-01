@@ -101,9 +101,11 @@ export default function MockTestsPage() {
           "Failed to load mock tests:",
           mockTestError,
         );
+
         setErrorMessage(
           "Could not load mock tests. Please refresh and try again.",
         );
+
         setLoading(false);
         return;
       }
@@ -147,8 +149,10 @@ export default function MockTestsPage() {
       }
 
       const tests = (mockTestData ?? []) as MockTestRow[];
+
       const questions = (questionData ??
         []) as MockTestQuestionRow[];
+
       const subjects = (subjectData ?? []) as SubjectRow[];
 
       const questionCountMap = new Map<string, number>();
@@ -197,7 +201,10 @@ export default function MockTestsPage() {
   );
 
   const completedAttempts = useMemo(
-    () => attempts.filter((attempt) => attempt.status === "submitted"),
+    () =>
+      attempts.filter(
+        (attempt) => attempt.status === "submitted",
+      ),
     [attempts],
   );
 
@@ -207,7 +214,9 @@ export default function MockTestsPage() {
     }
 
     return Math.max(
-      ...completedAttempts.map((attempt) => Number(attempt.score)),
+      ...completedAttempts.map((attempt) =>
+        Number(attempt.score),
+      ),
     );
   }, [completedAttempts]);
 
@@ -426,13 +435,12 @@ export default function MockTestsPage() {
                           test
                         </p>
 
-                        <button
-                          type="button"
-                          disabled
-                          className="cursor-not-allowed rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white opacity-70"
+                        <Link
+                          href={`/mock-tests/${test.id}`}
+                          className="inline-flex items-center justify-center rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
                         >
-                          Start Test
-                        </button>
+                          Start Test →
+                        </Link>
                       </div>
                     </article>
                   ))}
@@ -482,7 +490,9 @@ export default function MockTestsPage() {
 
                   <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center">
                     <p className="text-lg font-bold text-slate-900">
-                      {loading ? "—" : completedAttempts.length}
+                      {loading
+                        ? "—"
+                        : completedAttempts.length}
                     </p>
 
                     <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
