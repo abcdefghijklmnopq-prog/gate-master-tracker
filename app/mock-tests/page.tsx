@@ -30,6 +30,11 @@ type AttemptRow = {
   mock_test_id: string;
   score: number;
   status: string;
+  correct_answers: number;
+  incorrect_answers: number;
+  unanswered_answers: number;
+  total_time_seconds: number;
+  submitted_at: string | null;
 };
 
 type MockTest = {
@@ -39,6 +44,7 @@ type MockTest = {
   questions: number;
   marks: number;
   duration: string;
+  durationMinutes: number;
   difficulty: string;
   subject: string;
   status: "Available";
@@ -130,9 +136,14 @@ export default function MockTestsPage() {
         const { data: attemptData, error: attemptError } =
           await supabase
             .from("mock_test_attempts")
-            .select("mock_test_id, score, status")
+            .select(
+              "mock_test_id, score, status, correct_answers, incorrect_answers, unanswered_answers, total_time_seconds, submitted_at",
+            )
             .eq("user_id", user.id)
-            .eq("status", "submitted");
+            .eq("status", "submitted")
+            .order("submitted_at", {
+              ascending: false,
+            });
 
         if (cancelled) {
           return;
@@ -177,6 +188,7 @@ export default function MockTestsPage() {
         questions: questionCountMap.get(test.id) ?? 0,
         marks: Number(test.total_marks),
         duration: `${test.duration_minutes} min`,
+        durationMinutes: test.duration_minutes,
         difficulty: test.difficulty ?? "Mixed",
         subject:
           subjectMap.get(test.subject_id ?? "") ?? "CSE",
@@ -201,10 +213,7 @@ export default function MockTestsPage() {
   );
 
   const completedAttempts = useMemo(
-    () =>
-      attempts.filter(
-        (attempt) => attempt.status === "submitted",
-      ),
+    () => attempts.filter((attempt) => attempt.status === "submitted"),
     [attempts],
   );
 
@@ -214,10 +223,63 @@ export default function MockTestsPage() {
     }
 
     return Math.max(
-      ...completedAttempts.map((attempt) =>
-        Number(attempt.score),
-      ),
+      ...completedAttempts.map((attempt) => Number(attempt.score)),
     );
+  }, [completedAttempts]);
+
+  const averageScore = useMemo(() => {
+    if (completedAttempts.length === 0) {
+      return null;
+    }
+
+    const totalPercentage = completedAttempts.reduce(
+      (sum, attempt) => {
+        const test = mockTests.find(
+          (item) => item.id === attempt.mock_test_id,
+        );
+
+        if (!test || test.marks <= 0) {
+          return sum;
+        }
+
+        return (
+          sum +
+          (Number(attempt.score) / test.marks) * 100
+        );
+      },
+      0,
+    );
+
+    return totalPercentage / completedAttempts.length;
+  }, [completedAttempts, mockTests]);
+
+  const accuracy = useMemo(() => {
+    if (completedAttempts.length === 0) {
+      return null;
+    }
+
+    const totals = completedAttempts.reduce(
+      (result, attempt) => ({
+        correct:
+          result.correct + Number(attempt.correct_answers ?? 0),
+        incorrect:
+          result.incorrect +
+          Number(attempt.incorrect_answers ?? 0),
+      }),
+      {
+        correct: 0,
+        incorrect: 0,
+      },
+    );
+
+    const attemptedQuestions =
+      totals.correct + totals.incorrect;
+
+    if (attemptedQuestions === 0) {
+      return null;
+    }
+
+    return (totals.correct / attemptedQuestions) * 100;
   }, [completedAttempts]);
 
   return (
@@ -437,9 +499,9 @@ export default function MockTestsPage() {
 
                         <Link
                           href={`/mock-tests/${test.id}`}
-                          className="inline-flex items-center justify-center rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                          className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                         >
-                          Start Test →
+                          Start Test
                         </Link>
                       </div>
                     </article>
@@ -461,16 +523,19 @@ export default function MockTestsPage() {
                   </h2>
 
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                    Scores, accuracy, time analysis, and weak-topic
-                    insights will appear here after you complete
-                    mock tests.
+                    These metrics are calculated from your submitted
+                    mock test attempts.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-3 gap-3">
                   <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center">
                     <p className="text-lg font-bold text-slate-900">
-                      —
+                      {loading
+                        ? "—"
+                        : accuracy === null
+                          ? "—"
+                          : `${accuracy.toFixed(1)}%`}
                     </p>
 
                     <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
@@ -480,7 +545,11 @@ export default function MockTestsPage() {
 
                   <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center">
                     <p className="text-lg font-bold text-slate-900">
-                      —
+                      {loading
+                        ? "—"
+                        : averageScore === null
+                          ? "—"
+                          : `${averageScore.toFixed(1)}%`}
                     </p>
 
                     <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
@@ -508,6 +577,85 @@ export default function MockTestsPage() {
                   scores.
                 </div>
               )}
+
+              {userLoggedIn &&
+                !loading &&
+                completedAttempts.length > 0 && (
+                  <div className="mt-6 border-t border-slate-100 pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                          Recent Attempts
+                        </p>
+
+                        <h3 className="mt-1 text-base font-bold text-slate-950">
+                          Your latest submissions
+                        </h3>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 space-y-3">
+                      {completedAttempts
+                        .slice(0, 5)
+                        .map((attempt, index) => {
+                          const test = mockTests.find(
+                            (item) =>
+                              item.id === attempt.mock_test_id,
+                          );
+
+                          const score = Number(attempt.score);
+
+                          const percentage =
+                            test && test.marks > 0
+                              ? (score / test.marks) * 100
+                              : 0;
+
+                          return (
+                            <div
+                              key={`${attempt.mock_test_id}-${attempt.submitted_at}-${index}`}
+                              className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between"
+                            >
+                              <div>
+                                <p className="text-sm font-semibold text-slate-900">
+                                  {test?.title ??
+                                    "Mock Test"}
+                                </p>
+
+                                <p className="mt-1 text-xs text-slate-500">
+                                  {attempt.correct_answers}{" "}
+                                  correct ·{" "}
+                                  {attempt.incorrect_answers}{" "}
+                                  incorrect ·{" "}
+                                  {attempt.unanswered_answers}{" "}
+                                  unanswered
+                                </p>
+                              </div>
+
+                              <div className="flex items-center gap-4">
+                                <div className="text-right">
+                                  <p className="text-sm font-bold text-slate-950">
+                                    {score} /{" "}
+                                    {test?.marks ?? "—"}
+                                  </p>
+
+                                  <p className="mt-1 text-xs text-slate-500">
+                                    {percentage.toFixed(1)}%
+                                  </p>
+                                </div>
+
+                                <Link
+                                  href={`/mock-tests/${attempt.mock_test_id}`}
+                                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100"
+                                >
+                                  Retest
+                                </Link>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
             </section>
           </div>
         </main>
